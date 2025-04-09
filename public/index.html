@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DLSU Course Offerings</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        header {
+            background-color: #338000;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .search-form {
+            display: flex;
+            margin-bottom: 20px;
+            gap: 10px;
+        }
+        .search-form input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        .search-form button {
+            background-color: #338000;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .search-form button:hover {
+            background-color: #2a6800;
+        }
+        .results {
+            margin-top: 20px;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            display: none;
+        }
+        .error {
+            color: #d9534f;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #d9534f;
+            border-radius: 4px;
+            display: none;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th {
+            background-color: #338000;
+            color: white;
+            padding: 10px;
+            text-align: left;
+        }
+        td {
+            padding: 8px;
+            border-bottom: 1px solid #ddd;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        tr.open-section {
+            background-color: #D2EED3;
+        }
+        tr.professor-row {
+            background-color: #f9f9f9;
+            font-style: italic;
+        }
+        .legend {
+            margin-top: 20px;
+            display: flex;
+            gap: 20px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .color-box {
+            width: 20px;
+            height: 20px;
+        }
+        .green {
+            background-color: #D2EED3;
+        }
+        .blue {
+            background-color: #D4F1F9;
+        }
+        .instructions {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+        .no-results {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>DLSU Course Offerings Search</h1>
+    </header>
+    <div class="container">
+        <div class="instructions">
+            <p>Enter a course code (e.g., CSALGCM, GERIZAL, GELITPH) to search for available sections.</p>
+        </div>
+        
+        <div class="search-form">
+            <input type="text" id="courseCode" placeholder="Enter course code (e.g., CSALGCM)" maxlength="10">
+            <button id="searchButton">Search</button>
+        </div>
+        
+        <div class="error" id="errorMessage"></div>
+        <div class="loading" id="loadingIndicator">Searching for course offerings...</div>
+        <div class="no-results" id="noResults">No course sections found for this course code.</div>
+        
+        <div class="results" id="resultsContainer"></div>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="color-box green"></div>
+                <span>Open Section</span>
+            </div>
+            <div class="legend-item">
+                <div class="color-box blue"></div>
+                <span>Closed Section</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchButton = document.getElementById('searchButton');
+            const courseCodeInput = document.getElementById('courseCode');
+            const resultsContainer = document.getElementById('resultsContainer');
+            const errorMessage = document.getElementById('errorMessage');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const noResults = document.getElementById('noResults');
+
+            // Proxy URL would need to be set up to handle CORS issues
+            // This could be your own backend server that forwards requests
+            const proxyUrl = '/api/search';  // You would need to implement this endpoint
+
+            searchButton.addEventListener('click', searchCourse);
+            courseCodeInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    searchCourse();
+                }
+            });
+
+            function searchCourse() {
+                const courseCode = courseCodeInput.value.trim().toUpperCase();
+                
+                if (!courseCode) {
+                    showError('Please enter a course code');
+                    return;
+                }
+                
+                // Clear previous results
+                resultsContainer.innerHTML = '';
+                hideError();
+                showLoading();
+                hideNoResults();
+                
+                // In a real implementation, you would make an AJAX request to your backend
+                // which would then handle the curl request to the external service
+                fetchCourseOfferings(courseCode)
+                    .then(data => {
+                        hideLoading();
+                        
+                        if (!data || data.error) {
+                            showError(data.error || 'Failed to fetch course offerings');
+                            return;
+                        }
+                        
+                        if (data.noResults) {
+                            showNoResults();
+                            return;
+                        }
+                        
+                        displayResults(data);
+                    })
+                    .catch(error => {
+                        hideLoading();
+                        showError('Error: ' + error.message);
+                    });
+            }
+            
+            async function fetchCourseOfferings(courseCode) {
+                // In a real implementation, this would be an actual fetch to your backend
+                try {
+                    // Simulate API call to your backend server
+                    // This is where your backend would run the curl command and process the HTML
+                    const response = await fetch(`${proxyUrl}?course=${encodeURIComponent(courseCode)}`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`Server error: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    return data;
+                } catch (error) {
+                    console.error('Fetch error:', error);
+                    throw error;
+                }
+            }
+            
+            function getMockData(courseCode) {
+                // Mock data for demonstration purposes
+                if (courseCode === 'CSALGCM') {
+                    return {
+                        courseCode: 'CSALGCM',
+                        sections: [
+                            {
+                                classNbr: '797',
+                                course: 'CSALGCM',
+                                section: 'S11',
+                                days: ['M', 'H'],
+                                times: ['0915 - 1045', '0915 - 1045'],
+                                rooms: ['', 'GK203'],
+                                enrlCap: '43',
+                                enrolled: '0',
+                                remarks: '',
+                                professor: 'SHRESTHA, ANISH MAN SINGH',
+                                isOpen: true
+                            },
+                            {
+                                classNbr: '798',
+                                course: 'CSALGCM',
+                                section: 'S12',
+                                days: ['T', 'F'],
+                                times: ['1100 - 1230', '1100 - 1230'],
+                                rooms: ['GK310', 'GK310'],
+                                enrlCap: '45',
+                                enrolled: '45',
+                                remarks: '',
+                                professor: 'SANTOS, JUAN DELA CRUZ',
+                                isOpen: false
+                            }
+                        ]
+                    };
+                } else {
+                    return { noResults: true };
+                }
+            }
+            
+            function displayResults(data) {
+                // Create the table
+                const table = document.createElement('table');
+                const thead = document.createElement('thead');
+                const headerRow = document.createElement('tr');
+                
+                const headers = [
+                    'Class Nbr', 'Course', 'Section', 'Day/s', 
+                    'Time', 'Room', 'Enrl Cap', 'Enrolled', 'Remarks'
+                ];
+                
+                headers.forEach(headerText => {
+                    const th = document.createElement('th');
+                    th.textContent = headerText;
+                    headerRow.appendChild(th);
+                });
+                
+                thead.appendChild(headerRow);
+                table.appendChild(thead);
+                
+                const tbody = document.createElement('tbody');
+                
+                // Add data rows
+                data.sections.forEach(section => {
+                    // For each section, we might have multiple days/times/rooms
+                    for (let i = 0; i < section.days.length; i++) {
+                        const row = document.createElement('tr');
+                        if (section.isOpen) {
+                            row.classList.add('open-section');
+                        }
+                        
+                        // Only add all details on the first row
+                        if (i === 0) {
+                            // Class Number
+                            const classNbrCell = document.createElement('td');
+                            classNbrCell.textContent = section.classNbr;
+                            row.appendChild(classNbrCell);
+                            
+                            // Course
+                            const courseCell = document.createElement('td');
+                            courseCell.textContent = section.course;
+                            row.appendChild(courseCell);
+                            
+                            // Section
+                            const sectionCell = document.createElement('td');
+                            sectionCell.textContent = section.section;
+                            row.appendChild(sectionCell);
+                        } else {
+                            // Empty cells for subsequent rows
+                            for (let j = 0; j < 3; j++) {
+                                const emptyCell = document.createElement('td');
+                                row.appendChild(emptyCell);
+                            }
+                        }
+                        
+                        // Day
+                        const dayCell = document.createElement('td');
+                        dayCell.textContent = section.days[i];
+                        row.appendChild(dayCell);
+                        
+                        // Time
+                        const timeCell = document.createElement('td');
+                        timeCell.textContent = section.times[i];
+                        row.appendChild(timeCell);
+                        
+                        // Room
+                        const roomCell = document.createElement('td');
+                        roomCell.textContent = section.rooms[i];
+                        row.appendChild(roomCell);
+                        
+                        if (i === 0) {
+                            // Enrl Cap
+                            const enrlCapCell = document.createElement('td');
+                            enrlCapCell.textContent = section.enrlCap;
+                            row.appendChild(enrlCapCell);
+                            
+                            // Enrolled
+                            const enrolledCell = document.createElement('td');
+                            enrolledCell.textContent = section.enrolled;
+                            row.appendChild(enrolledCell);
+                            
+                            // Remarks
+                            const remarksCell = document.createElement('td');
+                            remarksCell.textContent = section.remarks;
+                            row.appendChild(remarksCell);
+                        } else {
+                            // Empty cells for subsequent rows
+                            for (let j = 0; j < 3; j++) {
+                                const emptyCell = document.createElement('td');
+                                row.appendChild(emptyCell);
+                            }
+                        }
+                        
+                        tbody.appendChild(row);
+                        
+                        // Add professor row after each schedule row
+                        if (i === section.days.length - 1) {
+                            const professorRow = document.createElement('tr');
+                            professorRow.classList.add('professor-row');
+                            
+                            const professorCell = document.createElement('td');
+                            professorCell.colSpan = 9;
+                            professorCell.textContent = section.professor;
+                            professorCell.style.textAlign = 'right';
+                            
+                            professorRow.appendChild(professorCell);
+                            tbody.appendChild(professorRow);
+                        }
+                    }
+                });
+                
+                table.appendChild(tbody);
+                resultsContainer.appendChild(table);
+            }
+            
+            function showError(message) {
+                errorMessage.textContent = message;
+                errorMessage.style.display = 'block';
+            }
+            
+            function hideError() {
+                errorMessage.style.display = 'none';
+            }
+            
+            function showLoading() {
+                loadingIndicator.style.display = 'block';
+            }
+            
+            function hideLoading() {
+                loadingIndicator.style.display = 'none';
+            }
+            
+            function showNoResults() {
+                noResults.style.display = 'block';
+            }
+            
+            function hideNoResults() {
+                noResults.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
