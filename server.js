@@ -1,10 +1,10 @@
 const express = require('express');
-// Remove axios: const axios = require('axios');
 const cheerio = require('cheerio');
 const path = require('path');
 const fs = require('fs').promises;
-const mongoose = require('mongoose'); // Import mongoose
-const { execSync } = require('child_process'); // Import execSync
+const mongoose = require('mongoose');
+const { execSync } = require('child_process');
+const { spawn } = require('child_process');
 const app = express();
 const port = process.env.PORT || 3000;
 
@@ -12,7 +12,7 @@ const port = process.env.PORT || 3000;
 require('dotenv').config();
 
 // MongoDB connection string
-const mongoURI = process.env.MONGODB_URI; // Replace with your MongoDB URI
+const mongoURI = process.env.MONGODB_URI;
 
 // Connect to MongoDB
 mongoose.connect(mongoURI, {
@@ -31,9 +31,141 @@ app.use(express.json());
 // Import the Course model
 const Course = require('./models/course');
 
-// Function to parse HTML using cheerio (remains the same)
+// State variables
+let currentCookie = process.env.COOKIE;
+let currentUserAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:137.0) Gecko/20100101 Firefox/137.0';
+let lastCookieRefresh = new Date();
+
+const pythonPath = path.join(__dirname, '.venv', 'bin', 'python3');
+
+async function getClearanceCookie(url) {
+    return new Promise((resolve, reject) => {
+        console.log(`Using Python interpreter: ${pythonPath}`);
+        
+        // Run the Python script with the provided URL
+        const python = spawn(pythonPath, ['main.py', '--headed', url]);
+        
+        let output = '';
+        let errorOutput = '';
+
+        python.stdout.on('data', (data) => {
+            const dataStr = data.toString();
+            console.log(`Python stdout: ${dataStr}`); // Log the raw output for debugging
+            output += dataStr;
+        });
+
+        python.stderr.on('data', (data) => {
+            const message = data.toString();
+            errorOutput += message;
+            // Only log as error if it's not an INFO message
+            if (!message.includes('[INFO]')) {
+                console.error(`Python error: ${message}`);
+            } else {
+                console.log(`Python info: ${message}`);
+            }
+        });
+
+        python.on('error', (error) => {
+            console.error(`Failed to start Python process: ${error.message}`);
+            reject(new Error(`Failed to start Python process: ${error.message}`));
+        });
+
+        python.on('close', (code) => {
+            try {
+                console.log(`Python process exited with code ${code}`);
+                console.log(`Full output: ${output}`);
+                
+                // Parse the output to get cookie and user agent
+                const cookieMatch = output.match(/Cookie: ([^\n]*)/);
+                const userAgentMatch = output.match(/User agent: ([^\n]*)/);
+
+                if (cookieMatch && userAgentMatch) {
+                    console.log('Successfully obtained new cookie and user agent');
+                    resolve({
+                        cookie: cookieMatch[1].trim(),
+                        userAgent: userAgentMatch[1].trim()
+                    });
+                } else {
+                    console.error('Failed to extract cookie or user agent from output');
+                    console.error('Cookie match:', cookieMatch);
+                    console.error('User agent match:', userAgentMatch);
+                    reject(new Error('Failed to extract cookie or user agent from output'));
+                }
+            } catch (error) {
+                console.error('Exception while processing Python output:', error);
+                reject(error);
+            }
+        });
+    });
+}
+
+async function performCurlRequest(courseCode, retryCount = 0) {
+    const command = `curl 'https://enroll.dlsu.edu.ph/dlsu/view_course_offerings' --compressed -X POST \
+                -H 'User-Agent: ${currentUserAgent}' \
+                -H 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8' \
+                -H 'Accept-Language: en-US,en;q=0.5' \
+                -H 'Accept-Encoding: gzip, deflate, br' \
+                -H 'Content-Type: application/x-www-form-urlencoded' \
+                -H 'Origin: https://enroll.dlsu.edu.ph' \
+                -H 'Connection: keep-alive' \
+                -H 'Referer: https://enroll.dlsu.edu.ph/dlsu/view_course_offerings' \
+                -H 'Cookie: ${currentCookie}' \
+                -H 'Upgrade-Insecure-Requests: 1' \
+                -H 'Sec-Fetch-Dest: document' \
+                -H 'Sec-Fetch-Mode: navigate' \
+                -H 'Sec-Fetch-Site: same-origin' \
+                -H 'Sec-Fetch-User: ?1' \
+                -H 'Priority: u=0, i' \
+                -H 'TE: trailers' \
+                --data-raw 'p_course_code=${encodeURIComponent(courseCode)}&p_option=all&p_button=Search&p_id_no=12216496&p_button=Submit' \
+                --silent --max-time 10`;
+
+    try {
+        const htmlContent = execSync(command, { encoding: 'utf8', timeout: 10000 });
+        // console.log(`Received response for ${courseCode} (length: ${htmlContent})`);
+
+        // Check for various error conditions
+        const needsNewCookie = 
+            htmlContent.includes('403 Forbidden') ||
+            htmlContent.includes('check your browser') ||
+            htmlContent.includes('Security check') ||
+            htmlContent.includes('Please wait') ||
+            htmlContent.length < 500 || // Suspiciously short response
+            !htmlContent.includes('table'); // Should always have a table in valid response
+
+        if (needsNewCookie && retryCount < 3) {
+            console.log(`Invalid response detected, attempting to get new cookie (attempt ${retryCount + 1}/3)`);
+            try {
+                const clearance = await getClearanceCookie('https://enroll.dlsu.edu.ph/dlsu/view_course_offerings');
+                currentCookie = clearance.cookie;
+                currentUserAgent = clearance.userAgent;
+                lastCookieRefresh = new Date();
+                
+                // Wait 2 seconds before retrying
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                return performCurlRequest(courseCode, retryCount + 1);
+            } catch (e) {
+                console.error('Failed to get new cookie:', e);
+                // If we can't get a new cookie, return the current HTML content
+                // as it might still be valid
+                return htmlContent;
+            }
+        }
+
+        return htmlContent;
+    } catch (error) {
+        if (retryCount < 3) {
+            console.log(`Request failed, retrying (${retryCount + 1}/3)...`);
+            // Wait 2 seconds before retrying
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            return performCurlRequest(courseCode, retryCount + 1);
+        }
+        throw error;
+    }
+}
+
+// Function to parse HTML using cheerio
 function parseHTML(html, courseCode) {
-    // ... (parsing logic remains the same) ...
     const $ = cheerio.load(html);
     const sections = [];
     let currentSection = null;
@@ -115,7 +247,6 @@ function parseHTML(html, courseCode) {
     return { courseCode, sections: validSections };
 }
 
-
 // API endpoint to fetch course offerings using curl
 app.get('/api/search', async (req, res) => {
     try {
@@ -125,84 +256,50 @@ app.get('/api/search', async (req, res) => {
             return res.status(400).json({ error: 'Course code is required' });
         }
 
-        const cookie = process.env.COOKIE;
-        if (!cookie) {
-            console.warn('DLSU Cookie not set in environment variables. Fetching from DLSU might fail.');
+        // Check if cookie needs refresh (every 30 minutes)
+        if (!currentCookie || new Date() - lastCookieRefresh > 30 * 60 * 1000) {
+            try {
+                const clearance = await getClearanceCookie('https://enroll.dlsu.edu.ph/dlsu/view_course_offerings');
+                currentCookie = clearance.cookie;
+                currentUserAgent = clearance.userAgent;
+                lastCookieRefresh = new Date();
+            } catch (error) {
+                console.error('Failed to refresh cookie:', error);
+            }
         }
+
+        const htmlContent = await performCurlRequest(courseCode);
 
         let courseDataFromDLSU = null;
         let fetchError = null;
-        let htmlContent = null;
 
-        // Only attempt fetch from DLSU if cookie is present
-        if (cookie) {
-            // Construct the curl command (ensure proper escaping, especially for the cookie)
-            // Using single quotes around the cookie helps prevent shell interpretation issues
-            const command = `curl 'https://enroll.dlsu.edu.ph/dlsu/view_course_offerings' --compressed -X POST \
-                -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:137.0) Gecko/20100101 Firefox/137.0' \
-                -H 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8' \
-                -H 'Accept-Language: en-US,en;q=0.5' \
-                -H 'Accept-Encoding: gzip, deflate, br' \
-                -H 'Content-Type: application/x-www-form-urlencoded' \
-                -H 'Origin: https://enroll.dlsu.edu.ph' \
-                -H 'Connection: keep-alive' \
-                -H 'Referer: https://enroll.dlsu.edu.ph/dlsu/view_course_offerings' \
-                -H 'Cookie: ${cookie.replace(/'/g, "'\\''")}' \
-                -H 'Upgrade-Insecure-Requests: 1' \
-                -H 'Sec-Fetch-Dest: document' \
-                -H 'Sec-Fetch-Mode: navigate' \
-                -H 'Sec-Fetch-Site: same-origin' \
-                -H 'Sec-Fetch-User: ?1' \
-                -H 'Priority: u=0, i' \
-                -H 'TE: trailers' \
-                --data-raw 'p_course_code=${encodeURIComponent(courseCode)}&p_option=all&p_button=Search&p_id_no=12216496&p_button=Submit' \
-                --silent --max-time 10`; // Added --silent to suppress progress meter and --max-time for timeout
+        if (htmlContent) {
+            // Add better validation of the HTML content
+            if (htmlContent.length < 500 || !htmlContent.includes('table')) {
+                console.log(`Invalid response received for ${courseCode}, length: ${htmlContent.length}`);
+                throw new Error('Invalid response received');
+            }
 
-            try {
-                console.log(`Executing curl for ${courseCode}`);
-                // Execute curl and capture stdout (the HTML)
-                htmlContent = execSync(command, { encoding: 'utf8', timeout: 10000 }); // Added timeout in execSync options as well
+            const parsedData = parseHTML(htmlContent, courseCode);
 
-                if (!htmlContent) {
-                     throw new Error('Curl command returned empty output.');
-                }
-
-                const parsedData = parseHTML(htmlContent, courseCode);
-
-                if (htmlContent.includes('No course sections found')) {
-                    console.log(`No sections found for ${courseCode} on DLSU site.`);
-                    courseDataFromDLSU = { courseCode, sections: [], noResults: true };
-                } else if (parsedData && parsedData.sections && parsedData.sections.length > 0) {
-                    courseDataFromDLSU = parsedData;
-                } else {
-                    console.log(`Potentially empty or invalid response for ${courseCode} from DLSU (curl).`);
-                    courseDataFromDLSU = null;
-                }
-
-            } catch (curlError) {
-                // execSync throws an error on non-zero exit code or timeout
-                console.error(`Error executing curl for ${courseCode}:`, curlError.message);
-                // Log stderr if available for more details
-                if (curlError.stderr) {
-                    console.error('Curl stderr:', curlError.stderr.toString());
-                }
-                fetchError = curlError;
+            if (htmlContent.includes('No course sections found')) {
+                console.log(`No sections found for ${courseCode} on DLSU site.`);
+                courseDataFromDLSU = { courseCode, sections: [], noResults: true };
+            } else if (parsedData && parsedData.sections && parsedData.sections.length > 0) {
+                courseDataFromDLSU = parsedData;
+            } else {
+                console.log(`Potentially empty or invalid response for ${courseCode} from DLSU (curl).`);
                 courseDataFromDLSU = null;
             }
-        } else {
-            console.log('Skipping DLSU fetch due to missing cookie.');
-            courseDataFromDLSU = null;
         }
 
-        // --- Fallback and DB logic remains the same ---
+        // Fallback and DB logic
         if (courseDataFromDLSU && !courseDataFromDLSU.noResults) {
             const now = new Date();
             try {
-                // Note: There's a slight error in the original updateOne syntax.
-                // You should combine $set operations into one object.
                 await Course.updateOne(
                     { courseCode: courseCode },
-                    { $set: { sections: courseDataFromDLSU.sections, lastUpdated: now } }, // Corrected $set syntax
+                    { $set: { sections: courseDataFromDLSU.sections, lastUpdated: now } },
                     { upsert: true }
                 );
                 console.log(`Course ${courseCode} data saved/updated in MongoDB`);
@@ -213,7 +310,7 @@ app.get('/api/search', async (req, res) => {
                 });
             } catch (dbError) {
                 console.error('Error saving to MongoDB:', dbError);
-                 return res.json({
+                return res.json({
                     courseCode: courseDataFromDLSU.courseCode,
                     sections: courseDataFromDLSU.sections,
                     lastUpdated: now
@@ -221,7 +318,7 @@ app.get('/api/search', async (req, res) => {
             }
         }
         else if (courseDataFromDLSU && courseDataFromDLSU.noResults) {
-             return res.json({ courseCode: courseCode, noResults: true });
+            return res.json({ courseCode: courseCode, noResults: true });
         }
         else {
             console.log(`Attempting fallback to MongoDB for ${courseCode}`);
