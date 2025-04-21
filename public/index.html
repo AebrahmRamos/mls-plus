@@ -5,124 +5,249 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DLSU Course Offerings</title>
     <style>
+        :root {
+            --primary-color: #338000;
+            --primary-hover: #2a6800;
+            --gray-light: #f4f4f4;
+            --gray-lighter: #f8f9fa;
+            --border-color: #ddd;
+            --error-color: #d9534f;
+            --open-section: #D2EED3;
+            --shadow: 0 2px 5px rgba(0,0,0,0.1);
+            --column-gap: 1.5rem;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
         body {
             font-family: Arial, sans-serif;
             margin: 0;
-            padding: 20px;
-            background-color: #f4f4f4;
+            padding: 0;
+            background-color: var(--gray-light);
+            line-height: 1.6;
         }
+        
         header {
-            background-color: #338000;
+            background-color: var(--primary-color);
             color: white;
-            padding: 15px;
+            padding: 1rem;
             text-align: center;
-            border-radius: 5px;
-            margin-bottom: 20px;
+            box-shadow: var(--shadow);
         }
+        
         .container {
-            max-width: 1000px;
-            margin: 0 auto;
-            background-color: white;
-            padding: 20px;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            width: 100%;
+            /* max-width: 1280px; */
+            margin: 1.5rem auto;
+            padding: 0 1rem;
         }
+        
+        .card {
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 1.5rem;
+        }
+        
         .search-form {
             display: flex;
-            margin-bottom: 20px;
-            gap: 10px;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
         }
+        
         .search-form input {
             flex: 1;
-            padding: 10px;
-            border: 1px solid #ddd;
+            min-width: 250px;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
             border-radius: 4px;
-            font-size: 16px;
+            font-size: 1rem;
         }
+        
         .search-form button {
-            background-color: #338000;
+            background-color: var(--primary-color);
             color: white;
             border: none;
-            padding: 10px 20px;
+            padding: 0.75rem 1.5rem;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 1rem;
+            transition: background-color 0.2s;
         }
+        
         .search-form button:hover {
-            background-color: #2a6800;
+            background-color: var(--primary-hover);
         }
-        .results {
-            margin-top: 20px;
-        }
-        .loading {
-            text-align: center;
-            padding: 20px;
-            display: none;
-        }
-        .error {
-            color: #d9534f;
-            padding: 10px;
-            margin: 10px 0;
-            border: 1px solid #d9534f;
+        
+        .instructions {
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background-color: var(--gray-lighter);
             border-radius: 4px;
+        }
+        
+        .loading, .error, .no-results {
+            text-align: center;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+        }
+        
+        .loading {
+            display: none;
+            background-color: var(--gray-lighter);
+        }
+        
+        .error {
+            color: var(--error-color);
+            border: 1px solid var(--error-color);
             display: none;
         }
-        table {
+        
+        .no-results {
+            color: #666;
+            display: none;
+        }
+        
+        /* True masonry layout with columns */
+        .results-container {
+            columns: 2 400px;
+            column-gap: var(--column-gap);
+            width: 100%;
+        }
+        
+        /* For single column on mobile */
+        @media (max-width: 767px) {
+            .results-container {
+                columns: 1;
+            }
+        }
+        
+        .course-container {
+            break-inside: avoid;
+            page-break-inside: avoid;
+            margin-bottom: var(--column-gap);
+            display: inline-block;
+            width: 100%;
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: var(--shadow);
+            padding: 1rem;
+        }
+        
+        .course-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--primary-color);
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .last-updated {
+            margin-left: auto;
+            font-size: 0.9rem;
+            color: #666;
+            font-style: italic;
+        }
+
+        .course-title {
+            font-size: 1.3rem;
+            color: var(--primary-color);
+            margin-right: auto;
+        }
+        
+        .section-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
         }
-        th {
-            background-color: #338000;
+        
+        .section-table th {
+            background-color: var(--primary-color);
             color: white;
-            padding: 10px;
+            padding: 0.75rem;
             text-align: left;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
         }
-        td {
-            padding: 8px;
-            border-bottom: 1px solid #ddd;
+        
+        .section-table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+            word-break: break-word;
         }
-        tr:nth-child(even) {
-            background-color: #f2f2f2;
+        
+        .section-table tr:nth-child(even) {
+            background-color: var(--gray-light);
         }
-        tr.open-section {
-            background-color: #D2EED3;
+        
+        .section-table tr.open-section {
+            background-color: var(--open-section);
         }
-        tr.professor-row {
+        
+        .section-table tr.professor-row {
             background-color: #f9f9f9;
             font-style: italic;
         }
-        .legend {
-            margin-top: 20px;
-            display: flex;
-            gap: 20px;
+        
+        .professor-cell {
+            text-align: right;
         }
+        
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+        
         .legend-item {
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 0.5rem;
         }
+        
         .color-box {
-            width: 20px;
-            height: 20px;
+            width: 1rem;
+            height: 1rem;
+            border-radius: 3px;
         }
+        
         .green {
-            background-color: #D2EED3;
+            background-color: var(--open-section);
         }
+        
         .blue {
             background-color: #D4F1F9;
         }
-        .instructions {
-            margin-top: 20px;
-            padding: 10px;
-            background-color: #f8f9fa;
-            border-radius: 4px;
-        }
-        .no-results {
-            text-align: center;
-            padding: 20px;
-            color: #666;
-            display: none;
+        
+        @media screen and (max-width: 767px) {
+            .section-table th, 
+            .section-table td {
+                padding: 0.5rem;
+                font-size: 0.85rem;
+            }
+            
+            /* Hide less important columns on small screens */
+            .hide-on-mobile {
+                display: none;
+            }
         }
     </style>
 </head>
@@ -130,30 +255,32 @@
     <header>
         <h1>DLSU Course Offerings Search</h1>
     </header>
+    
     <div class="container">
-        <div class="instructions">
-            <p>Enter a course code (e.g., CSALGCM, GERIZAL, GELITPH) to search for available sections.</p>
-        </div>
-        
-        <div class="search-form">
-            <input type="text" id="courseCode" placeholder="Enter course code (e.g., CSALGCM)" maxlength="10">
-            <button id="searchButton">Search</button>
-        </div>
-        
-        <div class="error" id="errorMessage"></div>
-        <div class="loading" id="loadingIndicator">Searching for course offerings...</div>
-        <div class="no-results" id="noResults">No course sections found for this course code.</div>
-        
-        <div class="results" id="resultsContainer"></div>
-        
-        <div class="legend">
-            <div class="legend-item">
-                <div class="color-box green"></div>
-                <span>Open Section</span>
+        <div class="card">
+            <div class="instructions">
+                <p>Enter course codes separated by commas (e.g., CSALGCM, GERIZAL, GELITPH) to search for available sections.</p>
             </div>
-            <div class="legend-item">
-                <div class="color-box blue"></div>
-                <span>Closed Section</span>
+            
+            <div class="search-form">
+                <input type="text" id="courseCode" placeholder="Enter course codes (e.g., CSALGCM, GERIZAL)" maxlength="200">
+                <button id="searchButton">Search</button>
+            </div>
+            
+            <div class="error" id="errorMessage"></div>
+            <div class="loading" id="loadingIndicator">Searching for course offerings...</div>
+            
+            <div id="resultsContainer" class="results-container"></div>
+            
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="color-box green"></div>
+                    <span>Open Section</span>
+                </div>
+                <div class="legend-item">
+                    <div class="color-box blue"></div>
+                    <span>Closed Section</span>
+                </div>
             </div>
         </div>
     </div>
@@ -165,62 +292,85 @@
             const resultsContainer = document.getElementById('resultsContainer');
             const errorMessage = document.getElementById('errorMessage');
             const loadingIndicator = document.getElementById('loadingIndicator');
-            const noResults = document.getElementById('noResults');
 
-            // Proxy URL would need to be set up to handle CORS issues
-            // This could be your own backend server that forwards requests
-            const proxyUrl = '/api/search';  // You would need to implement this endpoint
+            const proxyUrl = '/api/search';
 
-            searchButton.addEventListener('click', searchCourse);
+            // Add enter key support
             courseCodeInput.addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
-                    searchCourse();
+                    searchCourses();
                 }
             });
 
-            function searchCourse() {
-                const courseCode = courseCodeInput.value.trim().toUpperCase();
+            searchButton.addEventListener('click', searchCourses);
+
+            function searchCourses() {
+                const courseCodes = courseCodeInput.value.trim().toUpperCase().split(',');
                 
-                if (!courseCode) {
-                    showError('Please enter a course code');
+                if (!courseCodes.length || courseCodes[0] === '') {
+                    showError('Please enter at least one course code');
                     return;
                 }
                 
                 // Clear previous results
                 resultsContainer.innerHTML = '';
                 hideError();
-                showLoading();
-                hideNoResults();
                 
-                // In a real implementation, you would make an AJAX request to your backend
-                // which would then handle the curl request to the external service
-                fetchCourseOfferings(courseCode)
-                    .then(data => {
+                let promises = [];
+                
+                // Search each course code and collect promises
+                courseCodes.forEach(courseCode => {
+                    const trimmedCourseCode = courseCode.trim();
+                    if (trimmedCourseCode) {
+                        promises.push(fetchCourseOfferings(trimmedCourseCode));
+                    }
+                });
+                
+                showLoading();
+                
+                // Wait for all fetches to complete
+                Promise.all(promises)
+                    .then(results => {
                         hideLoading();
                         
-                        if (!data || data.error) {
-                            showError(data.error || 'Failed to fetch course offerings');
-                            return;
-                        }
-                        
-                        if (data.noResults) {
-                            showNoResults();
-                            return;
-                        }
-                        
-                        displayResults(data);
+                        results.forEach(data => {
+                            if (!data || data.error) {
+                                showError(`Error fetching ${data ? data.courseCode : 'course'}: ${data?.error || 'Failed to fetch course offerings'}`);
+                                return;
+                            }
+                            
+                            if (data.noResults) {
+                                const courseContainer = document.createElement('div');
+                                courseContainer.classList.add('course-container');
+                                
+                                const courseHeader = document.createElement('div');
+                                courseHeader.classList.add('course-header');
+                                
+                                const courseTitle = document.createElement('h2');
+                                courseTitle.classList.add('course-title');
+                                courseTitle.textContent = `Course: ${data.courseCode}`;
+                                courseHeader.appendChild(courseTitle);
+                                courseContainer.appendChild(courseHeader);
+                                
+                                const noResultsMessage = document.createElement('p');
+                                noResultsMessage.textContent = `No course sections found for ${data.courseCode}.`;
+                                courseContainer.appendChild(noResultsMessage);
+                                
+                                resultsContainer.appendChild(courseContainer);
+                                return;
+                            }
+                            
+                            displayResults(data);
+                        });
                     })
                     .catch(error => {
                         hideLoading();
-                        showError('Error: ' + error.message);
+                        showError(`Error: ${error.message}`);
                     });
             }
             
             async function fetchCourseOfferings(courseCode) {
-                // In a real implementation, this would be an actual fetch to your backend
                 try {
-                    // Simulate API call to your backend server
-                    // This is where your backend would run the curl command and process the HTML
                     const response = await fetch(`${proxyUrl}?course=${encodeURIComponent(courseCode)}`, {
                         method: 'GET',
                         headers: {
@@ -233,165 +383,173 @@
                     }
                     
                     const data = await response.json();
+                    if (!data.courseCode) {
+                        data.courseCode = courseCode;
+                    }
                     return data;
                 } catch (error) {
                     console.error('Fetch error:', error);
-                    throw error;
-                }
-            }
-            
-            function getMockData(courseCode) {
-                // Mock data for demonstration purposes
-                if (courseCode === 'CSALGCM') {
-                    return {
-                        courseCode: 'CSALGCM',
-                        sections: [
-                            {
-                                classNbr: '797',
-                                course: 'CSALGCM',
-                                section: 'S11',
-                                days: ['M', 'H'],
-                                times: ['0915 - 1045', '0915 - 1045'],
-                                rooms: ['', 'GK203'],
-                                enrlCap: '43',
-                                enrolled: '0',
-                                remarks: '',
-                                professor: 'SHRESTHA, ANISH MAN SINGH',
-                                isOpen: true
-                            },
-                            {
-                                classNbr: '798',
-                                course: 'CSALGCM',
-                                section: 'S12',
-                                days: ['T', 'F'],
-                                times: ['1100 - 1230', '1100 - 1230'],
-                                rooms: ['GK310', 'GK310'],
-                                enrlCap: '45',
-                                enrolled: '45',
-                                remarks: '',
-                                professor: 'SANTOS, JUAN DELA CRUZ',
-                                isOpen: false
-                            }
-                        ]
-                    };
-                } else {
-                    return { noResults: true };
+                    return { error: error.message, courseCode: courseCode };
                 }
             }
             
             function displayResults(data) {
-                // Create the table
+                console.log('Displaying results for:', data.courseCode, 'Received data:', data); // Log the entire data object
+
+                const courseCode = data.courseCode;
+
+                // Create a container for each course's results
+                const courseContainer = document.createElement('div');
+                courseContainer.classList.add('course-container');
+
+                // Create a header for the course
+                const courseHeader = document.createElement('div');
+                courseHeader.classList.add('course-header');
+                
+                const courseTitle = document.createElement('h2');
+                courseTitle.classList.add('course-title');
+                courseTitle.textContent = `Course: ${courseCode}`;
+                courseHeader.appendChild(courseTitle);
+                
+                // Add section count info
+                const sectionInfo = document.createElement('span');
+                const openSections = data.sections.filter(s => s.isOpen).length;
+                sectionInfo.textContent = `${openSections}/${data.sections.length} open sections`;
+                courseHeader.appendChild(sectionInfo);
+                
+                // Add last updated info
+                if (data.lastUpdated) {
+                    console.log('Found lastUpdated field:', data.lastUpdated); // Log if the field exists
+                    const lastUpdatedInfo = document.createElement('span');
+                    lastUpdatedInfo.classList.add('last-updated');
+                    const formattedTime = formatTimeAgo(data.lastUpdated);
+                    console.log('Formatted time:', formattedTime); // Log the result of formatTimeAgo
+                    lastUpdatedInfo.textContent = `Last Updated: ${formattedTime}`;
+                    courseHeader.appendChild(lastUpdatedInfo);
+                } else {
+                    console.log('No lastUpdated field found for:', courseCode); // Log if the field is missing
+                }
+                
+                courseContainer.appendChild(courseHeader);
+
+                // Create a responsive table wrapper
+                const tableWrapper = document.createElement('div');
+                tableWrapper.classList.add('table-responsive');
+
                 const table = document.createElement('table');
+                table.classList.add('section-table');
+                
                 const thead = document.createElement('thead');
                 const headerRow = document.createElement('tr');
-                
+
+                // Define headers with responsive classes
                 const headers = [
-                    'Class Nbr', 'Course', 'Section', 'Day/s', 
-                    'Time', 'Room', 'Enrl Cap', 'Enrolled', 'Remarks'
+                    { text: 'Class#', class: '' },
+                    { text: 'Section', class: '' },
+                    { text: 'Day/s', class: '' },
+                    { text: 'Time', class: '' },
+                    { text: 'Room', class: '' },
+                    { text: 'Cap', class: 'hide-on-mobile' },
+                    { text: 'Enrolled', class: '' },
+                    { text: 'Remarks', class: 'hide-on-mobile' }
                 ];
-                
-                headers.forEach(headerText => {
+
+                headers.forEach(header => {
                     const th = document.createElement('th');
-                    th.textContent = headerText;
+                    th.textContent = header.text;
+                    if (header.class) {
+                        th.classList.add(header.class);
+                    }
                     headerRow.appendChild(th);
                 });
-                
+
                 thead.appendChild(headerRow);
                 table.appendChild(thead);
-                
+
                 const tbody = document.createElement('tbody');
-                
-                // Add data rows
+
                 data.sections.forEach(section => {
-                    // For each section, we might have multiple days/times/rooms
                     for (let i = 0; i < section.days.length; i++) {
                         const row = document.createElement('tr');
                         if (section.isOpen) {
                             row.classList.add('open-section');
                         }
-                        
-                        // Only add all details on the first row
+
                         if (i === 0) {
-                            // Class Number
                             const classNbrCell = document.createElement('td');
                             classNbrCell.textContent = section.classNbr;
                             row.appendChild(classNbrCell);
-                            
-                            // Course
-                            const courseCell = document.createElement('td');
-                            courseCell.textContent = section.course;
-                            row.appendChild(courseCell);
-                            
-                            // Section
+
                             const sectionCell = document.createElement('td');
                             sectionCell.textContent = section.section;
                             row.appendChild(sectionCell);
                         } else {
-                            // Empty cells for subsequent rows
-                            for (let j = 0; j < 3; j++) {
+                            for (let j = 0; j < 2; j++) {
                                 const emptyCell = document.createElement('td');
                                 row.appendChild(emptyCell);
                             }
                         }
-                        
-                        // Day
+
                         const dayCell = document.createElement('td');
                         dayCell.textContent = section.days[i];
                         row.appendChild(dayCell);
-                        
-                        // Time
+
                         const timeCell = document.createElement('td');
                         timeCell.textContent = section.times[i];
                         row.appendChild(timeCell);
-                        
-                        // Room
+
                         const roomCell = document.createElement('td');
                         roomCell.textContent = section.rooms[i];
                         row.appendChild(roomCell);
-                        
+
                         if (i === 0) {
-                            // Enrl Cap
                             const enrlCapCell = document.createElement('td');
                             enrlCapCell.textContent = section.enrlCap;
+                            enrlCapCell.classList.add('hide-on-mobile');
                             row.appendChild(enrlCapCell);
-                            
-                            // Enrolled
+
                             const enrolledCell = document.createElement('td');
                             enrolledCell.textContent = section.enrolled;
                             row.appendChild(enrolledCell);
-                            
-                            // Remarks
+
                             const remarksCell = document.createElement('td');
                             remarksCell.textContent = section.remarks;
+                            remarksCell.classList.add('hide-on-mobile');
                             row.appendChild(remarksCell);
                         } else {
-                            // Empty cells for subsequent rows
-                            for (let j = 0; j < 3; j++) {
-                                const emptyCell = document.createElement('td');
-                                row.appendChild(emptyCell);
-                            }
+                            // Add empty cells for cap, enrolled, and remarks on subsequent rows
+                            const enrlCapCell = document.createElement('td');
+                            enrlCapCell.classList.add('hide-on-mobile');
+                            row.appendChild(enrlCapCell);
+
+                            const enrolledCell = document.createElement('td');
+                            row.appendChild(enrolledCell);
+
+                            const remarksCell = document.createElement('td');
+                            remarksCell.classList.add('hide-on-mobile');
+                            row.appendChild(remarksCell);
                         }
-                        
                         tbody.appendChild(row);
-                        
-                        // Add professor row after each schedule row
+
                         if (i === section.days.length - 1) {
                             const professorRow = document.createElement('tr');
                             professorRow.classList.add('professor-row');
-                            
+
                             const professorCell = document.createElement('td');
-                            professorCell.colSpan = 9;
+                            professorCell.colSpan = 8;
+                            professorCell.classList.add('professor-cell');
                             professorCell.textContent = section.professor;
-                            professorCell.style.textAlign = 'right';
-                            
+
                             professorRow.appendChild(professorCell);
                             tbody.appendChild(professorRow);
                         }
                     }
                 });
-                
+
                 table.appendChild(tbody);
-                resultsContainer.appendChild(table);
+                tableWrapper.appendChild(table);
+                courseContainer.appendChild(tableWrapper);
+                resultsContainer.appendChild(courseContainer);
             }
             
             function showError(message) {
@@ -410,13 +568,40 @@
             function hideLoading() {
                 loadingIndicator.style.display = 'none';
             }
-            
-            function showNoResults() {
-                noResults.style.display = 'block';
-            }
-            
-            function hideNoResults() {
-                noResults.style.display = 'none';
+
+            function formatTimeAgo(dateInput) {
+                let dateString;
+                // Check if the input is an object with a $date property
+                if (typeof dateInput === 'object' && dateInput !== null && dateInput.$date) {
+                    dateString = dateInput.$date;
+                } else {
+                    // Assume it's already a string or directly parsable
+                    dateString = dateInput;
+                }
+
+                if (!dateString) return ''; // Return empty if no valid date found
+
+                const now = new Date();
+                const lastUpdated = new Date(dateString);
+
+                // Check if the date is valid after parsing
+                if (isNaN(lastUpdated.getTime())) {
+                    console.error("Invalid date string received:", dateString);
+                    return 'Invalid date'; 
+                }
+
+                const diffMs = now - lastUpdated;
+                
+                const diffMinutes = Math.floor(diffMs / (1000 * 60));
+                const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                
+                if (diffHours >= 1) {
+                    return `${diffHours} ${diffHours === 1 ? 'hour' : 'hours'} ago`;
+                } else if (diffMinutes >= 0) { // Ensure minutes are not negative
+                    return `${diffMinutes} ${diffMinutes === 1 ? 'minute' : 'minutes'} ago`;
+                } else {
+                    return 'just now'; // Handle cases where the difference is very small or negative
+                }
             }
         });
     </script>
