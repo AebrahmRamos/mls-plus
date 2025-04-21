@@ -3,49 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DLSU Course Offerings</title>
+    <title>DLSU Course Offerings Search</title>
     <style>
+        /* CSS Variables */
         :root {
-            --primary-color: #338000;
-            --primary-hover: #2a6800;
-            --gray-light: #f4f4f4;
-            --gray-lighter: #f8f9fa;
-            --border-color: #ddd;
-            --error-color: #d9534f;
-            --open-section: #D2EED3;
-            --shadow: 0 2px 5px rgba(0,0,0,0.1);
-            --column-gap: 1.5rem;
+            --primary-color: #338000; /* DLSU Green */
+            --primary-hover: #2a6800; /* Darker green for hover */
+            --gray-light: #f4f4f4;    /* Light background */
+            --gray-lighter: #f8f9fa; /* Lighter background for elements */
+            --border-color: #ddd;     /* Standard border color */
+            --error-color: #d9534f;   /* Red for errors */
+            --open-section-bg: #D2EED3; /* Background for open sections */
+            --closed-section-bg: #D4F1F9; /* Background for closed sections */
+            --shadow: 0 2px 5px rgba(0,0,0,0.1); /* Subtle shadow */
+            --column-gap: 1.5rem;      /* Gap for masonry layout */
+            --checkbox-checked-bg: var(--primary-color);
+            --checkbox-border-color: #adb5bd;
+            --checkbox-focus-ring: rgba(51, 128, 0, 0.25); /* Light green focus ring */
         }
-        
+
+        /* Global Resets and Base Styles */
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
         }
-        
+
         body {
-            font-family: Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; /* System font stack */
             margin: 0;
             padding: 0;
             background-color: var(--gray-light);
             line-height: 1.6;
+            color: #333;
         }
-        
+
+        /* Header Styling */
         header {
             background-color: var(--primary-color);
             color: white;
-            padding: 1rem;
+            padding: 1rem 1.5rem;
             text-align: center;
             box-shadow: var(--shadow);
         }
-        
+        header h1 {
+            font-size: 1.75rem;
+            font-weight: 600;
+        }
+
+        /* Container and Card Styling */
         .container {
             width: 100%;
-            /* max-width: 1280px; */
+            /* max-width: 1280px; Limit maximum width */
             margin: 1.5rem auto;
             padding: 0 1rem;
         }
-        
+
         .card {
             background-color: white;
             padding: 1.5rem;
@@ -53,23 +66,48 @@
             box-shadow: var(--shadow);
             margin-bottom: 1.5rem;
         }
-        
+
+        /* Instructions Box */
+        .instructions {
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background-color: var(--gray-lighter);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 0.9rem;
+            color: #555;
+        }
+        .instructions code { /* Style inline code */
+             background-color: #e9ecef;
+             padding: 0.1em 0.4em;
+             border-radius: 3px;
+             font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+             font-size: 85%;
+        }
+
+        /* Search Form Styling */
         .search-form {
             display: flex;
             flex-wrap: wrap;
             gap: 0.75rem;
             margin-bottom: 1.5rem;
         }
-        
-        .search-form input {
+
+        .search-form input[type="text"] {
             flex: 1;
             min-width: 250px;
             padding: 0.75rem;
             border: 1px solid var(--border-color);
             border-radius: 4px;
             font-size: 1rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
-        
+        .search-form input[type="text"]:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem var(--checkbox-focus-ring);
+        }
+
         .search-form button {
             background-color: var(--primary-color);
             color: white;
@@ -78,200 +116,469 @@
             border-radius: 4px;
             cursor: pointer;
             font-size: 1rem;
+            font-weight: 500;
             transition: background-color 0.2s;
         }
-        
+
         .search-form button:hover {
             background-color: var(--primary-hover);
         }
-        
-        .instructions {
+
+        /* --- Improved Filter Controls Styling --- */
+        .filter-controls {
+            display: grid;
+            /* Responsive grid: 1 col default, up to 5 cols on large screens */
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 1rem; /* Increased gap */
             margin-bottom: 1.5rem;
-            padding: 1rem;
+            padding: 1.25rem; /* Increased padding */
             background-color: var(--gray-lighter);
-            border-radius: 4px;
+            border-radius: 6px; /* Slightly more rounded */
+            border: 1px solid var(--border-color);
         }
-        
+
+        /* Style for each individual filter group (label + checkbox container) */
+        .filter-group {
+            /* No specific styles needed unless for spacing inside */
+        }
+
+        .filter-group label { /* Label above the checkbox group */
+            display: block;
+            margin-bottom: 0.5rem; /* More space below label */
+            font-weight: 600; /* Bolder label */
+            font-size: 0.9rem;
+            color: #495057; /* Darker gray */
+        }
+
+        /* Container for checkboxes */
+        .checkbox-group {
+            max-height: 150px; /* Limit height */
+            overflow-y: auto;  /* Enable scroll if needed */
+            padding: 0.75rem;  /* Padding inside the box */
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background-color: white; /* White background for contrast */
+            font-size: 0.85rem; /* Smaller font for options */
+        }
+        /* Custom Scrollbar for Webkit (Chrome, Safari) */
+        .checkbox-group::-webkit-scrollbar {
+            width: 6px;
+        }
+        .checkbox-group::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+        .checkbox-group::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 3px;
+        }
+        .checkbox-group::-webkit-scrollbar-thumb:hover {
+            background: #aaa;
+        }
+        /* Custom Scrollbar for Firefox */
+        .checkbox-group {
+            scrollbar-width: thin;
+            scrollbar-color: #ccc #f1f1f1;
+        }
+
+        /* Styling for each checkbox + label row */
+        .checkbox-label {
+            display: flex; /* Use flex for alignment */
+            align-items: center;
+            margin-bottom: 0.5rem; /* Space between options */
+            cursor: pointer;
+            position: relative; /* Needed for custom checkbox */
+            padding-left: 1.75em; /* Space for custom checkbox */
+            min-height: 1.25em; /* Ensure height for alignment */
+        }
+        .checkbox-label:last-child {
+            margin-bottom: 0; /* No margin on the last item */
+        }
+
+        /* Hide the default checkbox */
+        .checkbox-label input[type="checkbox"] {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            height: 0;
+            width: 0;
+        }
+
+        /* Create a custom checkbox appearance */
+        .checkbox-label .custom-checkbox {
+            position: absolute;
+            top: 0.1em; /* Adjust vertical alignment */
+            left: 0;
+            height: 1.15em;
+            width: 1.15em;
+            background-color: #fff;
+            border: 1px solid var(--checkbox-border-color);
+            border-radius: 3px;
+            transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
+        }
+
+        /* Style the custom checkbox when the real checkbox is checked */
+        .checkbox-label input[type="checkbox"]:checked ~ .custom-checkbox {
+            background-color: var(--checkbox-checked-bg);
+            border-color: var(--checkbox-checked-bg);
+        }
+
+         /* Style the custom checkbox on hover */
+        .checkbox-label:hover input[type="checkbox"] ~ .custom-checkbox {
+            border-color: var(--primary-color);
+        }
+
+        /* Create the checkmark/indicator (hidden when not checked) */
+        .custom-checkbox::after {
+            content: "";
+            position: absolute;
+            display: none;
+            left: 0.35em;
+            top: 0.1em;
+            width: 0.3em;
+            height: 0.6em;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+
+        /* Display the checkmark when checked */
+        .checkbox-label input[type="checkbox"]:checked ~ .custom-checkbox::after {
+            display: block;
+        }
+
+        /* Focus style for accessibility */
+         .checkbox-label input[type="checkbox"]:focus ~ .custom-checkbox {
+             box-shadow: 0 0 0 0.2rem var(--checkbox-focus-ring);
+         }
+         .checkbox-label input[type="checkbox"]:focus:not(:checked) ~ .custom-checkbox {
+             border-color: var(--primary-color);
+         }
+
+
+        /* Filter Buttons Container */
+        .filter-buttons {
+            grid-column: 1 / -1; /* Span across all columns */
+            display: flex;
+            flex-wrap: wrap; /* Allow buttons to wrap on small screens */
+            gap: 0.75rem;
+            margin-top: 1rem; /* More space above buttons */
+        }
+
+        .filter-buttons button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: background-color 0.2s, opacity 0.2s;
+            flex-grow: 1; /* Make buttons share space */
+            flex-basis: 120px; /* Minimum width before wrapping */
+            text-align: center;
+        }
+
+        .filter-buttons button:hover {
+            background-color: var(--primary-hover);
+        }
+        .filter-buttons button:active {
+             opacity: 0.9;
+        }
+
+        .filter-buttons button.clear-filters {
+            background-color: #6c757d; /* Bootstrap secondary color */
+        }
+        .filter-buttons button.clear-filters:hover {
+            background-color: #5a6268;
+        }
+        /* --- End Filter Controls Styling --- */
+
+        /* Loading, Error, No Results Messages */
         .loading, .error, .no-results {
             text-align: center;
-            padding: 1rem;
-            margin: 1rem 0;
+            padding: 1.5rem; /* More padding */
+            margin: 1.5rem 0;
             border-radius: 4px;
+            font-size: 1rem;
         }
-        
+
         .loading {
-            display: none;
+            display: none; /* Controlled by JS */
             background-color: var(--gray-lighter);
+            color: #555;
         }
-        
+
         .error {
-            color: var(--error-color);
-            border: 1px solid var(--error-color);
-            display: none;
+            color: #721c24; /* Darker red text */
+            background-color: #f8d7da; /* Light red background */
+            border: 1px solid #f5c6cb; /* Red border */
+            display: none; /* Controlled by JS */
         }
-        
+
         .no-results {
             color: #666;
-            display: none;
+            background-color: var(--gray-lighter);
+            border: 1px solid var(--border-color);
+            display: none; /* Controlled by JS */
         }
-        
-        /* True masonry layout with columns */
+
+        /* Results Area - Masonry Layout */
         .results-container {
-            columns: 2 400px;
+            /* Using CSS Columns for masonry */
+            /* MODIFIED: Changed max columns from 3 to 2 */
+            columns: 2 320px; /* Target max 2 columns, min width 320px */
             column-gap: var(--column-gap);
             width: 100%;
         }
-        
-        /* For single column on mobile */
+
+        /* Responsive adjustments for columns */
+        /* REMOVED: Redundant media query for 2 columns, now handled by the main rule */
+        /* @media (max-width: 1024px) { ... } */
+
         @media (max-width: 767px) {
             .results-container {
-                columns: 1;
+                columns: 1; /* Single column on small screens */
+            }
+            .filter-controls {
+                grid-template-columns: 1fr; /* Stack filters */
             }
         }
-        
+
+        /* Individual Course Card in Results */
         .course-container {
-            break-inside: avoid;
+            break-inside: avoid; /* Prevent breaking inside a card */
             page-break-inside: avoid;
-            margin-bottom: var(--column-gap);
-            display: inline-block;
+            margin-bottom: var(--column-gap); /* Space below each card */
+            display: inline-block; /* Needed for columns */
             width: 100%;
             background-color: white;
             border-radius: 0.5rem;
             box-shadow: var(--shadow);
-            padding: 1rem;
+            padding: 1.25rem; /* Slightly more padding */
+            overflow: hidden; /* Contain elements */
         }
-        
+        /* Error message styling when inside a course container */
+        .course-container.error {
+             color: #721c24;
+             background-color: #f8d7da;
+             border: 1px solid #f5c6cb;
+             padding: 1rem;
+             text-align: center;
+        }
+
+
+        /* Course Header (Title, Count, Last Updated) */
         .course-header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: flex-start; /* Align items to top */
             margin-bottom: 1rem;
-            padding-bottom: 0.5rem;
+            padding-bottom: 0.75rem; /* More padding */
             border-bottom: 2px solid var(--primary-color);
-            flex-wrap: wrap;
-            gap: 0.5rem;
-        }
-
-        .last-updated {
-            margin-left: auto;
-            font-size: 0.9rem;
-            color: #666;
-            font-style: italic;
+            flex-wrap: wrap; /* Allow wrapping */
+            gap: 0.5rem; /* Space between wrapped items */
         }
 
         .course-title {
-            font-size: 1.3rem;
+            font-size: 1.4rem; /* Larger title */
             color: var(--primary-color);
-            margin-right: auto;
+            font-weight: 600;
+            margin-right: 1rem; /* Space after title */
+            flex-shrink: 0; /* Prevent title from shrinking too much */
         }
-        
+        .course-header span:not(.course-title) { /* Styling for count/updated */
+             font-size: 0.85rem;
+             color: #555;
+             padding-top: 0.2rem; /* Align text better with title */
+        }
+
+        .last-updated {
+            margin-left: auto; /* Push to the right */
+            font-style: italic;
+            white-space: nowrap; /* Prevent wrapping */
+        }
+
+        /* Responsive Table Wrapper */
+        .table-responsive {
+            overflow-x: auto; /* Enable horizontal scroll on small screens */
+            -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+            margin-bottom: 0.5rem;
+        }
+
+        /* Sections Table Styling */
         .section-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 0.5rem;
-            font-size: 0.95rem;
+            font-size: 0.9rem; /* Slightly smaller table font */
         }
-        
+
         .section-table th {
             background-color: var(--primary-color);
             color: white;
             padding: 0.75rem;
             text-align: left;
             font-weight: 600;
-            position: sticky;
+            position: sticky; /* Sticky header */
             top: 0;
+            z-index: 10; /* Ensure header is above content */
+            white-space: nowrap; /* Prevent header text wrapping */
         }
-        
+
         .section-table td {
             padding: 0.75rem;
             border-bottom: 1px solid var(--border-color);
-            word-break: break-word;
+            vertical-align: top; /* Align content to top */
+            /* word-break: break-word; Removed, let it scroll */
         }
-        
-        .section-table tr:nth-child(even) {
+
+        /* Alternating Row Colors */
+        .section-table tbody tr:nth-child(even) {
             background-color: var(--gray-light);
         }
-        
-        .section-table tr.open-section {
-            background-color: var(--open-section);
+        .section-table tbody tr:hover { /* Hover effect */
+             background-color: #e9ecef;
         }
-        
+
+        /* Open/Closed Section Highlighting */
+        .section-table tr.open-section {
+            background-color: var(--open-section-bg);
+        }
+        .section-table tr.open-section:nth-child(even) { /* Ensure open overrides even style */
+             background-color: var(--open-section-bg);
+        }
+        .section-table tr.open-section:hover {
+             background-color: #bce3be; /* Slightly darker green on hover */
+        }
+
+        /* Professor Row (if used, currently not in JS) */
         .section-table tr.professor-row {
             background-color: #f9f9f9;
             font-style: italic;
         }
-        
-        .professor-cell {
+        .professor-cell { /* If used */
             text-align: right;
         }
-        
-        .table-responsive {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-        
+
+        /* Legend Styling */
         .legend {
             display: flex;
             flex-wrap: wrap;
             gap: 1.5rem;
             margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-color); /* Separator line */
         }
-        
+
         .legend-item {
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            font-size: 0.85rem;
         }
-        
+
         .color-box {
             width: 1rem;
             height: 1rem;
             border-radius: 3px;
+            border: 1px solid rgba(0,0,0,0.1); /* Subtle border */
         }
-        
-        .green {
-            background-color: var(--open-section);
+
+        .color-box.green {
+            background-color: var(--open-section-bg);
         }
-        
-        .blue {
-            background-color: #D4F1F9;
+
+        .color-box.blue {
+            background-color: var(--closed-section-bg);
         }
-        
+
+        /* Responsive Table Column Hiding */
         @media screen and (max-width: 767px) {
-            .section-table th, 
+            .section-table th,
             .section-table td {
-                padding: 0.5rem;
-                font-size: 0.85rem;
+                padding: 0.6rem; /* Adjust padding */
+                font-size: 0.8rem; /* Smaller font on mobile */
             }
-            
-            /* Hide less important columns on small screens */
+
+            /* Hide specific columns on small screens */
             .hide-on-mobile {
                 display: none;
             }
+             /* Adjust header font size */
+            header h1 {
+                font-size: 1.5rem;
+            }
+            /* Adjust card padding */
+            .card {
+                padding: 1rem;
+            }
+            .filter-controls {
+                padding: 1rem;
+            }
         }
+
     </style>
 </head>
-<body>
-    <header>
+<body class="bg-gray-100 font-sans"> <header>
         <h1>DLSU Course Offerings Search</h1>
     </header>
-    
+
     <div class="container">
         <div class="card">
             <div class="instructions">
-                <p>Enter course codes separated by commas (e.g., CSALGCM, GERIZAL, GELITPH) to search for available sections.</p>
+                <p>Enter course codes separated by commas (e.g., <code>CSALGCM</code>, <code>GERIZAL</code>, <code>GELITPH</code>) to search for available sections.</p>
             </div>
-            
+
             <div class="search-form">
                 <input type="text" id="courseCode" placeholder="Enter course codes (e.g., CSALGCM, GERIZAL)" maxlength="200">
                 <button id="searchButton">Search</button>
             </div>
-            
+
+            <div class="filter-controls" id="filterControls" style="display: none;">
+                <div class="filter-group">
+                    <label>Time:</label>
+                    <div id="filterTimeContainer" class="checkbox-group">
+                        <span class="loading-filters">Loading filters...</span>
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <label>Day/s:</label>
+                    <div id="filterDayContainer" class="checkbox-group">
+                         <span class="loading-filters">Loading filters...</span>
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <label>Professor:</label>
+                    <div id="filterProfessorContainer" class="checkbox-group">
+                         <span class="loading-filters">Loading filters...</span>
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <label>Building:</label>
+                    <div id="filterBuildingContainer" class="checkbox-group">
+                         <span class="loading-filters">Loading filters...</span>
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <label>Remarks:</label>
+                    <div id="filterRemarksContainer" class="checkbox-group">
+                         <span class="loading-filters">Loading filters...</span>
+                    </div>
+                </div>
+
+                <div class="filter-buttons">
+                    <button id="applyFiltersButton">Apply Filters</button>
+                    <button id="clearFiltersButton" class="clear-filters">Clear Filters</button>
+                </div>
+            </div>
             <div class="error" id="errorMessage"></div>
             <div class="loading" id="loadingIndicator">Searching for course offerings...</div>
-            
-            <div id="resultsContainer" class="results-container"></div>
-            
+            <div class="no-results" id="noResultsMessage">No sections match the current filters.</div>
+
+            <div id="resultsContainer" class="results-container">
+                </div>
+
             <div class="legend">
                 <div class="legend-item">
                     <div class="color-box green"></div>
@@ -287,323 +594,588 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // --- DOM Element References ---
             const searchButton = document.getElementById('searchButton');
             const courseCodeInput = document.getElementById('courseCode');
             const resultsContainer = document.getElementById('resultsContainer');
             const errorMessage = document.getElementById('errorMessage');
             const loadingIndicator = document.getElementById('loadingIndicator');
+            const noResultsMessage = document.getElementById('noResultsMessage');
+            const filterControls = document.getElementById('filterControls');
+            const filterTimeContainer = document.getElementById('filterTimeContainer');
+            const filterDayContainer = document.getElementById('filterDayContainer');
+            const filterProfessorContainer = document.getElementById('filterProfessorContainer');
+            const filterBuildingContainer = document.getElementById('filterBuildingContainer');
+            const filterRemarksContainer = document.getElementById('filterRemarksContainer');
+            const applyFiltersButton = document.getElementById('applyFiltersButton');
+            const clearFiltersButton = document.getElementById('clearFiltersButton');
 
-            const proxyUrl = '/api/search';
+            // --- State Variables ---
+            const proxyUrl = '/api/search'; // Replace with your actual API endpoint if needed
+            let allFetchedData = []; // Stores the raw data from all successful searches
 
-            // Add enter key support
+            // --- Event Listeners ---
+            searchButton.addEventListener('click', searchCourses);
+            applyFiltersButton.addEventListener('click', applyFilters);
+            clearFiltersButton.addEventListener('click', clearFilters);
             courseCodeInput.addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
-                    searchCourses();
+                    searchCourses(); // Trigger search on Enter key
                 }
             });
 
-            searchButton.addEventListener('click', searchCourses);
+            // --- Core Functions ---
 
+            /**
+             * Initiates the course search process based on user input.
+             */
             function searchCourses() {
-                const courseCodes = courseCodeInput.value.trim().toUpperCase().split(',');
-                
-                if (!courseCodes.length || courseCodes[0] === '') {
-                    showError('Please enter at least one course code');
+                const courseCodes = courseCodeInput.value.trim().toUpperCase().split(',')
+                                        .map(code => code.trim()).filter(code => code !== ''); // Clean up input
+
+                if (courseCodes.length === 0) {
+                    showError('Please enter at least one course code.');
                     return;
                 }
-                
-                // Clear previous results
-                resultsContainer.innerHTML = '';
-                hideError();
-                
-                let promises = [];
-                
-                // Search each course code and collect promises
-                courseCodes.forEach(courseCode => {
-                    const trimmedCourseCode = courseCode.trim();
-                    if (trimmedCourseCode) {
-                        promises.push(fetchCourseOfferings(trimmedCourseCode));
-                    }
-                });
-                
+
+                // Reset UI state for new search
+                resetUIBeforeSearch();
+
+                // Create fetch promises for each course code
+                const promises = courseCodes.map(fetchCourseOfferings);
+
                 showLoading();
-                
-                // Wait for all fetches to complete
+
+                // Process results once all fetches are complete
                 Promise.all(promises)
-                    .then(results => {
-                        hideLoading();
-                        
-                        results.forEach(data => {
-                            if (!data || data.error) {
-                                showError(`Error fetching ${data ? data.courseCode : 'course'}: ${data?.error || 'Failed to fetch course offerings'}`);
-                                return;
-                            }
-                            
-                            if (data.noResults) {
-                                const courseContainer = document.createElement('div');
-                                courseContainer.classList.add('course-container');
-                                
-                                const courseHeader = document.createElement('div');
-                                courseHeader.classList.add('course-header');
-                                
-                                const courseTitle = document.createElement('h2');
-                                courseTitle.classList.add('course-title');
-                                courseTitle.textContent = `Course: ${data.courseCode}`;
-                                courseHeader.appendChild(courseTitle);
-                                courseContainer.appendChild(courseHeader);
-                                
-                                const noResultsMessage = document.createElement('p');
-                                noResultsMessage.textContent = `No course sections found for ${data.courseCode}.`;
-                                courseContainer.appendChild(noResultsMessage);
-                                
-                                resultsContainer.appendChild(courseContainer);
-                                return;
-                            }
-                            
-                            displayResults(data);
-                        });
-                    })
+                    .then(handleFetchResults)
                     .catch(error => {
                         hideLoading();
-                        showError(`Error: ${error.message}`);
+                        showError(`An unexpected error occurred during search: ${error.message}`);
+                        console.error('Search processing error:', error);
                     });
             }
-            
+
+            /**
+             * Fetches course offering data for a single course code.
+             * @param {string} courseCode - The course code to search for.
+             * @returns {Promise<object>} - A promise resolving to the course data or an error object.
+             */
             async function fetchCourseOfferings(courseCode) {
                 try {
-                    const response = await fetch(`${proxyUrl}?course=${encodeURIComponent(courseCode)}`, {
+                    // --- IMPORTANT ---
+                    // Replace this URL with your actual backend API endpoint
+                    // Example: const apiUrl = `https://your-api.com/search?course=${encodeURIComponent(courseCode)}`;
+                    // For local testing using a proxy, '/api/search' might be correct if set up.
+                    const apiUrl = `${proxyUrl}?course=${encodeURIComponent(courseCode)}`;
+                    // --- END IMPORTANT ---
+
+                    const response = await fetch(apiUrl, {
                         method: 'GET',
                         headers: {
-                            'Content-Type': 'application/json'
+                            'Content-Type': 'application/json',
+                            // Add any other necessary headers (e.g., Authorization)
                         }
                     });
-                    
+
                     if (!response.ok) {
-                        throw new Error(`Server error: ${response.status}`);
+                        // Try to get error message from response body if possible
+                        let errorMsg = `Server error: ${response.status} ${response.statusText}`;
+                        try {
+                            const errorData = await response.json();
+                            errorMsg = errorData.message || errorMsg;
+                        } catch (e) { /* Ignore if response is not JSON */ }
+                        throw new Error(errorMsg);
                     }
-                    
+
                     const data = await response.json();
+                    // Ensure courseCode is attached, even if API doesn't return it
                     if (!data.courseCode) {
                         data.courseCode = courseCode;
                     }
                     return data;
                 } catch (error) {
-                    console.error('Fetch error:', error);
-                    return { error: error.message, courseCode: courseCode };
+                    console.error(`Fetch error for ${courseCode}:`, error);
+                    // Return a structured error object for consistent handling
+                    return { error: true, courseCode: courseCode, message: error.message };
                 }
             }
-            
-            function displayResults(data) {
-                console.log('Displaying results for:', data.courseCode, 'Received data:', data); // Log the entire data object
 
+            /**
+             * Handles the results from all fetch promises.
+             * @param {Array<object>} results - An array of results from fetchCourseOfferings.
+             */
+            function handleFetchResults(results) {
+                hideLoading();
+                let hasValidData = false;
+                let hasErrors = false;
+
+                allFetchedData = []; // Clear previous successful data
+
+                results.forEach(data => {
+                    if (data.error) {
+                        // Display error specific to this course fetch
+                        displayCourseSpecificError(data.courseCode, data.message || 'Failed to fetch course offerings');
+                        hasErrors = true;
+                    } else if (data.noResults || !data.sections || data.sections.length === 0) {
+                        // Display "no results" specific to this course
+                        displayCourseSpecificNoResults(data.courseCode);
+                    } else {
+                        // Store valid data
+                        allFetchedData.push(data);
+                        hasValidData = true;
+                    }
+                });
+
+                if (hasValidData) {
+                    populateFilters(); // Create filter options based on ALL fetched data
+                    filterControls.style.display = 'grid'; // Show filter section
+                    renderResults(allFetchedData); // Render initial results
+                } else if (!hasErrors && resultsContainer.children.length === 0) {
+                    // If no valid data, no errors displayed, and no "no results" messages shown
+                    showError('No course sections found for the requested courses, or failed to fetch data.');
+                } else if (!hasValidData && hasErrors && resultsContainer.children.length === 0) {
+                     // If only errors occurred and nothing else was displayed
+                     showError('Failed to fetch data for all requested courses.');
+                }
+                 // If only "no results" messages were shown, no general error/message is needed.
+            }
+
+
+            /**
+             * Populates the filter checkboxes based on the collected data.
+             */
+            function populateFilters() {
+                const filters = {
+                    times: new Set(),
+                    days: new Set(),
+                    professors: new Set(),
+                    buildings: new Set(),
+                    remarks: new Set()
+                };
+
+                // Collect unique values for each filter category
+                allFetchedData.forEach(course => {
+                    if (!course || !course.sections) return;
+                    course.sections.forEach(section => {
+                        section.times?.forEach(time => { if (time) filters.times.add(time); });
+                        section.days?.forEach(day => { if (day) filters.days.add(day); });
+                        if (section.professor) filters.professors.add(section.professor);
+                        section.rooms?.forEach(room => {
+                            const building = extractBuilding(room);
+                            if (building) filters.buildings.add(building);
+                        });
+                        if (section.remarks) filters.remarks.add(section.remarks);
+                    });
+                });
+
+                // Generate checkboxes for each category
+                generateCheckboxes(filterTimeContainer, [...filters.times].sort());
+                generateCheckboxes(filterDayContainer, [...filters.days].sort());
+                generateCheckboxes(filterProfessorContainer, [...filters.professors].sort());
+                generateCheckboxes(filterBuildingContainer, [...filters.buildings].sort());
+                generateCheckboxes(filterRemarksContainer, [...filters.remarks].sort());
+            }
+
+            /**
+             * Generates checkbox elements for a given filter category.
+             * @param {HTMLElement} container - The container element for the checkboxes.
+             * @param {Array<string>} options - An array of unique string options.
+             */
+            function generateCheckboxes(container, options) {
+                container.innerHTML = ''; // Clear previous content (like "Loading filters...")
+                if (options.length === 0) {
+                    container.innerHTML = '<span class="no-options">N/A</span>'; // Indicate if no options
+                    return;
+                }
+                options.forEach(option => {
+                    const label = document.createElement('label');
+                    label.classList.add('checkbox-label'); // Class for styling
+
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.value = option;
+                    // Generate a unique ID based on container and option for the 'for' attribute if needed
+                    // checkbox.id = `${container.id}-${option.replace(/\s+/g, '-')}`;
+                    checkbox.name = container.id.replace('Container', ''); // e.g., 'filterTime'
+
+                    const customCheckbox = document.createElement('span');
+                    customCheckbox.classList.add('custom-checkbox'); // Class for the styled checkbox
+
+                    // label.htmlFor = checkbox.id; // Associate label with checkbox
+                    label.appendChild(checkbox);
+                    label.appendChild(customCheckbox); // Add the custom span
+                    label.appendChild(document.createTextNode(` ${option}`)); // Add space and text
+
+                    container.appendChild(label);
+                });
+            }
+
+            /**
+             * Applies the selected filters to the displayed results.
+             */
+            function applyFilters() {
+                // Get selected values from checkboxes for each category
+                const selectedFilters = {
+                    times: getSelectedCheckboxValues('filterTimeContainer'),
+                    days: getSelectedCheckboxValues('filterDayContainer'),
+                    professors: getSelectedCheckboxValues('filterProfessorContainer'),
+                    buildings: getSelectedCheckboxValues('filterBuildingContainer'),
+                    remarks: getSelectedCheckboxValues('filterRemarksContainer')
+                };
+
+                // Filter the `allFetchedData` based on selections
+                const filteredData = allFetchedData.map(course => {
+                    if (!course || !course.sections) return null; // Skip if course data is invalid
+
+                    const filteredSections = course.sections.filter(section => {
+                        // Check if the section matches the selected criteria for each filter type
+                        const timeMatch = selectedFilters.times.length === 0 || section.times?.some(t => selectedFilters.times.includes(t));
+                        const dayMatch = selectedFilters.days.length === 0 || section.days?.some(d => selectedFilters.days.includes(d));
+                        const profMatch = selectedFilters.professors.length === 0 || selectedFilters.professors.includes(section.professor);
+                        const buildingMatch = selectedFilters.buildings.length === 0 || section.rooms?.some(r => selectedFilters.buildings.includes(extractBuilding(r)));
+                        const remarksMatch = selectedFilters.remarks.length === 0 || selectedFilters.remarks.includes(section.remarks);
+
+                        // Section must match all active filters
+                        return timeMatch && dayMatch && profMatch && buildingMatch && remarksMatch;
+                    });
+
+                    // Return the course with only the filtered sections, or null if no sections match
+                    return filteredSections.length > 0 ? { ...course, sections: filteredSections } : null;
+
+                }).filter(course => course !== null); // Remove courses that became null (no matching sections)
+
+                renderResults(filteredData); // Render the filtered data
+            }
+
+            /**
+             * Clears all selected filters and re-renders the original full results.
+             */
+            function clearFilters() {
+                resetFilters(); // Uncheck all checkboxes
+                hideNoResults(); // Hide the "no results" message
+                renderResults(allFetchedData); // Re-render with original full data
+            }
+
+            /**
+             * Renders the course data (either full or filtered) into the results container.
+             * @param {Array<object>} dataToRender - Array of course objects to display.
+             */
+            function renderResults(dataToRender) {
+                resultsContainer.innerHTML = ''; // Clear previous results
+                hideNoResults(); // Hide no results message initially
+
+                let totalSectionsDisplayed = 0;
+
+                if (!dataToRender || dataToRender.length === 0) {
+                    if (allFetchedData.length > 0) { // Check if there was data initially but filters removed it all
+                       showNoResults();
+                    } else {
+                        // This case is usually handled by handleFetchResults, but added as a fallback.
+                        // Avoid showing error if specific course errors/no-results were already shown.
+                        if (resultsContainer.children.length === 0) {
+                             showError("No course data available to display.");
+                        }
+                    }
+                    return;
+                }
+
+                // Render each course that has sections
+                dataToRender.forEach(data => {
+                    if (data && data.sections && data.sections.length > 0) {
+                        displayCourseSections(data); // Display this course's sections
+                        totalSectionsDisplayed += data.sections.length;
+                    }
+                });
+
+                // If filtering resulted in zero sections across all originally fetched courses
+                if (totalSectionsDisplayed === 0 && allFetchedData.length > 0) {
+                    showNoResults();
+                }
+            }
+
+            /**
+             * Creates and appends the HTML structure for a single course's sections.
+             * @param {object} data - The course data object including sections.
+             */
+            function displayCourseSections(data) {
                 const courseCode = data.courseCode;
-
-                // Create a container for each course's results
                 const courseContainer = document.createElement('div');
                 courseContainer.classList.add('course-container');
 
-                // Create a header for the course
+                // --- Course Header ---
                 const courseHeader = document.createElement('div');
                 courseHeader.classList.add('course-header');
-                
+
                 const courseTitle = document.createElement('h2');
                 courseTitle.classList.add('course-title');
-                courseTitle.textContent = `Course: ${courseCode}`;
+                courseTitle.textContent = `${courseCode}`; // Just the code for brevity
                 courseHeader.appendChild(courseTitle);
-                
-                // Add section count info
+
                 const sectionInfo = document.createElement('span');
-                const openSections = data.sections.filter(s => s.isOpen).length;
-                sectionInfo.textContent = `${openSections}/${data.sections.length} open sections`;
+                const openSectionsCount = data.sections.filter(s => s.isOpen).length;
+                sectionInfo.textContent = `(${openSectionsCount}/${data.sections.length} open)`;
                 courseHeader.appendChild(sectionInfo);
-                
-                // Add last updated info
+
                 if (data.lastUpdated) {
-                    console.log('Found lastUpdated field:', data.lastUpdated); // Log if the field exists
                     const lastUpdatedInfo = document.createElement('span');
                     lastUpdatedInfo.classList.add('last-updated');
-                    const formattedTime = formatTimeAgo(data.lastUpdated);
-                    console.log('Formatted time:', formattedTime); // Log the result of formatTimeAgo
-                    lastUpdatedInfo.textContent = `Last Updated: ${formattedTime}`;
+                    lastUpdatedInfo.textContent = `Updated: ${formatTimeAgo(data.lastUpdated)}`;
                     courseHeader.appendChild(lastUpdatedInfo);
-                } else {
-                    console.log('No lastUpdated field found for:', courseCode); // Log if the field is missing
                 }
-                
                 courseContainer.appendChild(courseHeader);
 
-                // Create a responsive table wrapper
+                // --- Table ---
                 const tableWrapper = document.createElement('div');
                 tableWrapper.classList.add('table-responsive');
 
                 const table = document.createElement('table');
                 table.classList.add('section-table');
-                
+
+                // Table Head
                 const thead = document.createElement('thead');
                 const headerRow = document.createElement('tr');
-
-                // Define headers with responsive classes
-                const headers = [
-                    { text: 'Class#', class: '' },
-                    { text: 'Section', class: '' },
-                    { text: 'Day/s', class: '' },
-                    { text: 'Time', class: '' },
-                    { text: 'Room', class: '' },
-                    { text: 'Cap', class: 'hide-on-mobile' },
-                    { text: 'Enrolled', class: '' },
-                    { text: 'Remarks', class: 'hide-on-mobile' }
+                const headers = [ // Define headers and mobile visibility
+                    { text: 'Class#', mobile: true },
+                    { text: 'Section', mobile: true },
+                    { text: 'Day/s', mobile: true },
+                    { text: 'Time', mobile: true },
+                    { text: 'Room', mobile: true },
+                    { text: 'Cap', mobile: false }, // Hide Cap on mobile
+                    { text: 'Enrolled', mobile: true },
+                    { text: 'Remarks', mobile: false } // Hide Remarks on mobile
                 ];
-
                 headers.forEach(header => {
                     const th = document.createElement('th');
                     th.textContent = header.text;
-                    if (header.class) {
-                        th.classList.add(header.class);
+                    if (!header.mobile) {
+                        th.classList.add('hide-on-mobile'); // Add class to hide
                     }
                     headerRow.appendChild(th);
                 });
-
                 thead.appendChild(headerRow);
                 table.appendChild(thead);
 
+                // Table Body
                 const tbody = document.createElement('tbody');
-
                 data.sections.forEach(section => {
-                    for (let i = 0; i < section.days.length; i++) {
+                    const rowClass = section.isOpen ? 'open-section' : '';
+                    const numRows = Math.max(section.days?.length || 1, section.times?.length || 1, section.rooms?.length || 1);
+
+                    for (let i = 0; i < numRows; i++) {
                         const row = document.createElement('tr');
-                        if (section.isOpen) {
-                            row.classList.add('open-section');
+                        if (rowClass) row.classList.add(rowClass);
+
+                        // Add cells common to the section (only on the first row)
+                        if (i === 0) {
+                            appendCell(row, section.classNbr || 'N/A', numRows);
+                            appendCell(row, section.section || 'N/A', numRows);
                         }
 
+                        // Add cells that can have multiple values
+                        appendCell(row, section.days?.[i] || '');
+                        appendCell(row, section.times?.[i] || '');
+                        appendCell(row, section.rooms?.[i] || '');
+
+                        // Add remaining common cells (only on the first row)
                         if (i === 0) {
-                            const classNbrCell = document.createElement('td');
-                            classNbrCell.textContent = section.classNbr;
-                            row.appendChild(classNbrCell);
-
-                            const sectionCell = document.createElement('td');
-                            sectionCell.textContent = section.section;
-                            row.appendChild(sectionCell);
-                        } else {
-                            for (let j = 0; j < 2; j++) {
-                                const emptyCell = document.createElement('td');
-                                row.appendChild(emptyCell);
-                            }
-                        }
-
-                        const dayCell = document.createElement('td');
-                        dayCell.textContent = section.days[i];
-                        row.appendChild(dayCell);
-
-                        const timeCell = document.createElement('td');
-                        timeCell.textContent = section.times[i];
-                        row.appendChild(timeCell);
-
-                        const roomCell = document.createElement('td');
-                        roomCell.textContent = section.rooms[i];
-                        row.appendChild(roomCell);
-
-                        if (i === 0) {
-                            const enrlCapCell = document.createElement('td');
-                            enrlCapCell.textContent = section.enrlCap;
-                            enrlCapCell.classList.add('hide-on-mobile');
-                            row.appendChild(enrlCapCell);
-
-                            const enrolledCell = document.createElement('td');
-                            enrolledCell.textContent = section.enrolled;
-                            row.appendChild(enrolledCell);
-
-                            const remarksCell = document.createElement('td');
-                            remarksCell.textContent = section.remarks;
-                            remarksCell.classList.add('hide-on-mobile');
-                            row.appendChild(remarksCell);
-                        } else {
-                            // Add empty cells for cap, enrolled, and remarks on subsequent rows
-                            const enrlCapCell = document.createElement('td');
-                            enrlCapCell.classList.add('hide-on-mobile');
-                            row.appendChild(enrlCapCell);
-
-                            const enrolledCell = document.createElement('td');
-                            row.appendChild(enrolledCell);
-
-                            const remarksCell = document.createElement('td');
-                            remarksCell.classList.add('hide-on-mobile');
-                            row.appendChild(remarksCell);
+                            appendCell(row, section.enrlCap ?? 'N/A', numRows, true); // Hide on mobile
+                            appendCell(row, section.enrolled ?? 'N/A', numRows);
+                            appendCell(row, section.remarks || '', numRows, true); // Hide on mobile
                         }
                         tbody.appendChild(row);
-
-                        if (i === section.days.length - 1) {
-                            const professorRow = document.createElement('tr');
-                            professorRow.classList.add('professor-row');
-
-                            const professorCell = document.createElement('td');
-                            professorCell.colSpan = 8;
-                            professorCell.classList.add('professor-cell');
-                            professorCell.textContent = section.professor;
-
-                            professorRow.appendChild(professorCell);
-                            tbody.appendChild(professorRow);
-                        }
                     }
+                     // Add Professor Row (Optional) - uncomment if professor data is reliable
+                     /*
+                     if (section.professor) {
+                         const profRow = document.createElement('tr');
+                         if (rowClass) profRow.classList.add(rowClass); // Match section color
+                         profRow.classList.add('professor-row'); // Add specific class if needed
+                         const profCell = document.createElement('td');
+                         // Calculate colspan based on visible columns
+                         const visibleCols = headers.filter((h, idx) => h.mobile || !isMobileView()).length;
+                         profCell.colSpan = visibleCols; // Span across visible columns
+                         profCell.textContent = `Professor: ${section.professor}`;
+                         profCell.style.textAlign = 'left'; // Align left
+                         profCell.style.fontStyle = 'italic';
+                         profCell.style.fontSize = '0.8em';
+                         profCell.style.paddingTop = '0.2rem';
+                         profCell.style.paddingBottom = '0.5rem';
+                         profRow.appendChild(profCell);
+                         tbody.appendChild(profRow);
+                     }
+                     */
                 });
 
                 table.appendChild(tbody);
                 tableWrapper.appendChild(table);
                 courseContainer.appendChild(tableWrapper);
-                resultsContainer.appendChild(courseContainer);
+
+                resultsContainer.appendChild(courseContainer); // Add the complete course card to the results area
             }
-            
-            function showError(message) {
-                errorMessage.textContent = message;
-                errorMessage.style.display = 'block';
+
+            // --- UI Helper Functions ---
+
+            /** Resets UI elements before a new search */
+            function resetUIBeforeSearch() {
+                resultsContainer.innerHTML = ''; // Clear results
+                hideError();
+                hideNoResults();
+                hideLoading();
+                filterControls.style.display = 'none'; // Hide filters
+                // Clear previous filter options visually
+                const filterContainers = [filterTimeContainer, filterDayContainer, filterProfessorContainer, filterBuildingContainer, filterRemarksContainer];
+                filterContainers.forEach(container => {
+                    container.innerHTML = '<span class="loading-filters">Loading filters...</span>';
+                });
             }
-            
-            function hideError() {
-                errorMessage.style.display = 'none';
+
+            /** Unchecks all filter checkboxes */
+            function resetFilters() {
+                const checkboxes = filterControls.querySelectorAll('input[type="checkbox"]');
+                checkboxes.forEach(checkbox => checkbox.checked = false);
             }
-            
+
+            /** Shows the loading indicator */
             function showLoading() {
                 loadingIndicator.style.display = 'block';
             }
-            
+
+            /** Hides the loading indicator */
             function hideLoading() {
                 loadingIndicator.style.display = 'none';
             }
 
-            function formatTimeAgo(dateInput) {
-                let dateString;
-                // Check if the input is an object with a $date property
-                if (typeof dateInput === 'object' && dateInput !== null && dateInput.$date) {
-                    dateString = dateInput.$date;
-                } else {
-                    // Assume it's already a string or directly parsable
-                    dateString = dateInput;
-                }
-
-                if (!dateString) return ''; // Return empty if no valid date found
-
-                const now = new Date();
-                const lastUpdated = new Date(dateString);
-
-                // Check if the date is valid after parsing
-                if (isNaN(lastUpdated.getTime())) {
-                    console.error("Invalid date string received:", dateString);
-                    return 'Invalid date'; 
-                }
-
-                const diffMs = now - lastUpdated;
-                
-                const diffMinutes = Math.floor(diffMs / (1000 * 60));
-                const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-                
-                if (diffHours >= 1) {
-                    return `${diffHours} ${diffHours === 1 ? 'hour' : 'hours'} ago`;
-                } else if (diffMinutes >= 0) { // Ensure minutes are not negative
-                    return `${diffMinutes} ${diffMinutes === 1 ? 'minute' : 'minutes'} ago`;
-                } else {
-                    return 'just now'; // Handle cases where the difference is very small or negative
-                }
+            /** Shows the main error message */
+            function showError(message) {
+                errorMessage.textContent = message;
+                errorMessage.style.display = 'block';
             }
-        });
+
+            /** Hides the main error message */
+            function hideError() {
+                errorMessage.style.display = 'none';
+                errorMessage.textContent = '';
+            }
+
+            /** Shows the "no results" message */
+            function showNoResults() {
+                noResultsMessage.style.display = 'block';
+            }
+
+            /** Hides the "no results" message */
+            function hideNoResults() {
+                noResultsMessage.style.display = 'none';
+            }
+
+            /** Displays an error message within a course card */
+            function displayCourseSpecificError(courseCode, message) {
+                const errorContainer = document.createElement('div');
+                errorContainer.classList.add('course-container', 'error'); // Use card structure but with error class
+                errorContainer.textContent = `Error fetching ${courseCode}: ${message}`;
+                resultsContainer.appendChild(errorContainer);
+            }
+
+             /** Displays a "no results" message within a course card */
+            function displayCourseSpecificNoResults(courseCode) {
+                const courseContainer = document.createElement('div');
+                courseContainer.classList.add('course-container'); // Regular card structure
+
+                const courseHeader = document.createElement('div');
+                courseHeader.classList.add('course-header');
+                const courseTitle = document.createElement('h2');
+                courseTitle.classList.add('course-title');
+                courseTitle.textContent = `${courseCode}`;
+                courseHeader.appendChild(courseTitle);
+                courseContainer.appendChild(courseHeader);
+
+                const noResultsPara = document.createElement('p');
+                noResultsPara.textContent = `No course sections found for ${courseCode}.`;
+                noResultsPara.style.padding = '1rem 0'; // Add some padding
+                courseContainer.appendChild(noResultsPara);
+
+                resultsContainer.appendChild(courseContainer);
+            }
+
+
+            // --- Utility Functions ---
+
+            /**
+             * Extracts the building code from a room string.
+             * @param {string|null} room - The room string (e.g., "G301", "ONLINE").
+             * @returns {string|null} - The uppercase building code or "ONLINE" or null.
+             */
+            function extractBuilding(room) {
+                if (!room || typeof room !== 'string') return null;
+                const upperRoom = room.toUpperCase();
+                if (upperRoom === 'ONLINE') return 'ONLINE';
+                const match = upperRoom.match(/^[A-Z]+/); // Match leading capital letters
+                return match ? match[0] : null;
+            }
+
+            /**
+             * Gets the values of checked checkboxes within a specific container.
+             * @param {string} containerId - The ID of the container element.
+             * @returns {Array<string>} - An array of values from checked checkboxes.
+             */
+            function getSelectedCheckboxValues(containerId) {
+                const container = document.getElementById(containerId);
+                if (!container) return [];
+                const checkedBoxes = container.querySelectorAll('input[type="checkbox"]:checked');
+                return Array.from(checkedBoxes).map(cb => cb.value);
+            }
+
+            /**
+             * Appends a table cell (td) to a row.
+             * @param {HTMLTableRowElement} row - The table row element.
+             * @param {string} text - The text content for the cell.
+             * @param {number} [rowSpan=1] - The rowspan attribute for the cell.
+             * @param {boolean} [hideMobile=false] - Whether to add the 'hide-on-mobile' class.
+             */
+            function appendCell(row, text, rowSpan = 1, hideMobile = false) {
+                const cell = document.createElement('td');
+                cell.textContent = text;
+                if (rowSpan > 1) {
+                    cell.rowSpan = rowSpan;
+                }
+                if (hideMobile) {
+                    cell.classList.add('hide-on-mobile');
+                }
+                row.appendChild(cell);
+            }
+
+             /**
+             * Formats a timestamp into a relative "time ago" string.
+             * @param {string|number} timestamp - The timestamp (ISO string or milliseconds).
+             * @returns {string} - Formatted relative time string.
+             */
+            function formatTimeAgo(timestamp) {
+                if (!timestamp) return 'N/A';
+                const date = new Date(timestamp);
+                const now = new Date();
+                const seconds = Math.round((now - date) / 1000);
+                const minutes = Math.round(seconds / 60);
+                const hours = Math.round(minutes / 60);
+                const days = Math.round(hours / 24);
+
+                if (seconds < 60) return 'just now';
+                if (minutes < 60) return `${minutes} min ago`;
+                if (hours < 24) return `${hours} hr ago`;
+                if (days < 7) return `${days} day${days > 1 ? 's' : ''} ago`;
+                // Fallback to simple date format for older dates
+                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            }
+
+             /**
+             * Checks if the current view is likely mobile based on window width.
+             * @returns {boolean} True if window width is <= 767px.
+             */
+            function isMobileView() {
+                return window.innerWidth <= 767;
+            }
+
+        }); // End DOMContentLoaded
     </script>
+
 </body>
 </html>
