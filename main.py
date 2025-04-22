@@ -58,6 +58,11 @@ class CloudflareSolver:
     ) -> None:
         config = zendriver.Config(headless=headless)
 
+        config.add_argument('--no-sandbox')
+        config.add_argument('--disable-dev-shm-usage')
+        config.add_argument('--disable-gpu')
+        config.add_argument('--display=:99')
+
         if user_agent is not None:
             config.add_argument(f"--user-agent={user_agent}")
 
