@@ -63,7 +63,11 @@ class CloudflareSolver:
 
         config.add_argument('--disable-dev-shm-usage')
         config.add_argument('--disable-gpu')
-        config.add_argument('--display=:99')
+        config.add_argument('--headless=new')
+        config.add_argument('--no-zygote')
+        config.add_argument('--single-process')
+        config.add_argument('--disable-setuid-sandbox')
+    
 
         if user_agent is not None:
             config.add_argument(f"--user-agent={user_agent}")
@@ -191,6 +195,20 @@ async def get_cf_clearance(url: str, timeout: float = 30, proxy: Optional[str] =
                         clearance_cookie = solver.extract_clearance_cookie(all_cookies)
                     except asyncio.TimeoutError:
                         logging.error("Timeout while solving challenge")
+            
+            if clearance_cookie is None:
+                logging.error("No clearance cookie obtained after challenge solve attempt")
+                html = await solver.driver.main_tab.get_content()
+                logging.error(f"Page content length: {len(html)}")
+                logging.error(f"Current URL: {await solver.driver.main_tab.get_url()}")
+                return {
+                    "success": False,
+                    "error": "Failed to obtain clearance cookie",
+                    "debug_info": {
+                        "page_length": len(html),
+                        "current_url": await solver.driver.main_tab.get_url()
+                    }
+                }
             
             current_user_agent = await solver.get_user_agent()
             
