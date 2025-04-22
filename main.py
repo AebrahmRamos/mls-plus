@@ -87,8 +87,14 @@ class CloudflareSolver:
         proxy: Optional[str] = None,
     ) -> None:
         # Start virtual display
-        self.vdisplay = Xvfb(width=1280, height=720, colordepth=24)
-        self.vdisplay.start()
+        try:
+            self.vdisplay = Xvfb(width=1280, height=720, colordepth=24)
+            self.vdisplay.start()
+        except Exception as e:
+            logging.error(f"Failed to initialize and start virtual display: {e}")
+            if hasattr(self, 'vdisplay') and self.vdisplay is not None:
+                self.vdisplay.stop()
+            raise
 
         config = zendriver.Config(
             headless=headless,
