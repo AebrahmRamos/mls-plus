@@ -15,6 +15,7 @@ import zendriver
 from selenium_authenticated_proxy import SeleniumAuthenticatedProxy
 from zendriver.cdp.network import T_JSON_DICT, Cookie
 from zendriver.core.element import Element
+from xvfbwrapper import Xvfb
 
 # Configure logging
 logging.basicConfig(
@@ -56,6 +57,10 @@ class CloudflareSolver:
         headless: bool = True,
         proxy: Optional[str] = None,
     ) -> None:
+        # Start virtual display
+        self.vdisplay = Xvfb(width=1280, height=720, colordepth=24)
+        self.vdisplay.start()
+
         config = zendriver.Config(
             headless=headless,
             headless_mode="new" if headless else None,
@@ -91,6 +96,7 @@ class CloudflareSolver:
 
     async def __aexit__(self, *_: Any) -> None:
         await self.driver.stop()
+        self.vdisplay.stop()  # Stop virtual display
 
     @staticmethod
     def _format_cookies(cookies: Iterable[Cookie]) -> List[T_JSON_DICT]:
