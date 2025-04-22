@@ -61,6 +61,7 @@ class CloudflareSolver:
         config.add_argument('--disable-dev-shm-usage')
         config.add_argument('--disable-gpu')
         config.add_argument('--display=:99')
+        config.add_argument('--no-sandbox')
 
         if user_agent is not None:
             config.add_argument(f"--user-agent={user_agent}")
