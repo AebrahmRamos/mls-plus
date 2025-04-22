@@ -15,10 +15,7 @@ require('dotenv').config();
 const mongoURI = process.env.MONGODB_URI;
 
 // Connect to MongoDB
-mongoose.connect(mongoURI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-})
+mongoose.connect(mongoURI, {})
     .then(() => console.log('Connected to MongoDB'))
     .catch(err => console.error('MongoDB connection error:', err));
 
@@ -43,7 +40,7 @@ async function getClearanceCookie(url) {
         console.log(`Using Python interpreter: ${pythonPath}`);
         
         // Run the Python script with the provided URL
-        const python = spawn(pythonPath, ['main.py', url]);
+        const python = spawn(pythonPath, ['main.py', '--headed', url]);
         
         let output = '';
         let errorOutput = '';
