@@ -58,12 +58,12 @@ class CloudflareSolver:
     ) -> None:
         config = zendriver.Config(
             headless=headless,
+            headless_mode="new" if headless else None,
             no_sandbox=True
         )
 
         config.add_argument('--disable-dev-shm-usage')
         config.add_argument('--disable-gpu')
-        config.add_argument('--headless=new')
         config.add_argument('--no-zygote')
         config.add_argument('--single-process')
         config.add_argument('--disable-setuid-sandbox')
