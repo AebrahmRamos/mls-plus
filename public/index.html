@@ -674,7 +674,7 @@
                         method: 'GET',
                         headers: {
                             'Content-Type': 'application/json',
-                            // Add any other necessary headers (e.g., Authorization)
+                            'ngrok-skip-browser-warning': 'true'
                         }
                     });
 
@@ -941,6 +941,7 @@
                     { text: 'Day/s', mobile: true },
                     { text: 'Time', mobile: true },
                     { text: 'Room', mobile: true },
+                    { text: 'Professor', mobile: true }, // Added professor column
                     { text: 'Cap', mobile: false }, // Hide Cap on mobile
                     { text: 'Enrolled', mobile: true },
                     { text: 'Remarks', mobile: false } // Hide Remarks on mobile
@@ -979,32 +980,15 @@
 
                         // Add remaining common cells (only on the first row)
                         if (i === 0) {
+                            appendCell(row, section.professor || 'TBA', numRows); // Added professor cell
                             appendCell(row, section.enrlCap ?? 'N/A', numRows, true); // Hide on mobile
                             appendCell(row, section.enrolled ?? 'N/A', numRows);
                             appendCell(row, section.remarks || '', numRows, true); // Hide on mobile
                         }
                         tbody.appendChild(row);
                     }
-                     // Add Professor Row (Optional) - uncomment if professor data is reliable
-                     /*
-                     if (section.professor) {
-                         const profRow = document.createElement('tr');
-                         if (rowClass) profRow.classList.add(rowClass); // Match section color
-                         profRow.classList.add('professor-row'); // Add specific class if needed
-                         const profCell = document.createElement('td');
-                         // Calculate colspan based on visible columns
-                         const visibleCols = headers.filter((h, idx) => h.mobile || !isMobileView()).length;
-                         profCell.colSpan = visibleCols; // Span across visible columns
-                         profCell.textContent = `Professor: ${section.professor}`;
-                         profCell.style.textAlign = 'left'; // Align left
-                         profCell.style.fontStyle = 'italic';
-                         profCell.style.fontSize = '0.8em';
-                         profCell.style.paddingTop = '0.2rem';
-                         profCell.style.paddingBottom = '0.5rem';
-                         profRow.appendChild(profCell);
-                         tbody.appendChild(profRow);
-                     }
-                     */
+                    // Remove the professor row since it's now in the table
+                    /* if (section.professor) { ... } */
                 });
 
                 table.appendChild(tbody);

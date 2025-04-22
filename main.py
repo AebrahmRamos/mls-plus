@@ -46,6 +46,35 @@ class CloudflareSolver:
     A class for solving Cloudflare challenges with Zendriver.
     """
 
+    _instance = None  # Class-level singleton instance
+    _lock = asyncio.Lock()  # Class-level lock for synchronization
+    _last_successful_cookie = None  # Last successfully obtained cookie
+    _last_cookie_time = None  # Timestamp of last successful cookie
+
+    @classmethod
+    async def get_instance(
+        cls,
+        *,
+        user_agent: Optional[str],
+        timeout: float,
+        http2: bool = True,
+        http3: bool = True,
+        headless: bool = True,
+        proxy: Optional[str] = None,
+    ) -> 'CloudflareSolver':
+        """Get or create a CloudflareSolver instance."""
+        async with cls._lock:
+            if cls._instance is None:
+                cls._instance = cls(
+                    user_agent=user_agent,
+                    timeout=timeout,
+                    http2=http2,
+                    http3=http3,
+                    headless=headless,
+                    proxy=proxy
+                )
+            return cls._instance
+
     def __init__(
         self,
         *,
@@ -73,8 +102,9 @@ class CloudflareSolver:
 
         self.driver = zendriver.Browser(config)
         self._timeout = timeout
+        self._cookie_valid_duration = timedelta(minutes=10)  # Cookie validity period
 
-    async def __aenter__(self) -> CloudflareSolver:
+    async def __aenter__(self) -> 'CloudflareSolver':
         await self.driver.start()
         return self
 
@@ -150,22 +180,43 @@ class CloudflareSolver:
 
                 await challenge.mouse_click()
 
+    @classmethod
+    async def check_existing_cookie(cls) -> Optional[Dict[str, Any]]:
+        """Check if we have a valid cached cookie."""
+        if (cls._last_successful_cookie and cls._last_cookie_time and 
+            datetime.now(timezone.utc) - cls._last_cookie_time < timedelta(minutes=30)):
+            return cls._last_successful_cookie
+        return None
+
+    @classmethod
+    def update_cookie_cache(cls, cookie_data: Dict[str, Any]) -> None:
+        """Update the cached cookie data."""
+        cls._last_successful_cookie = cookie_data
+        cls._last_cookie_time = datetime.now(timezone.utc)
+
 async def get_cf_clearance(url: str, timeout: float = 30, proxy: Optional[str] = None, headless: bool = True) -> Dict[str, Any]:
     """
     Get Cloudflare clearance cookie and user agent for a specific URL.
     """
+    # Check for existing valid cookie first
+    existing_cookie = await CloudflareSolver.check_existing_cookie()
+    if existing_cookie:
+        logging.info("Using cached cookie")
+        return existing_cookie
+
     user_agent = get_chrome_user_agent()
-    
     logging.info(f"Starting browser with user agent: {user_agent}")
     logging.info(f"Mode: {'headless' if headless else 'headed'}")
     
     try:
-        async with CloudflareSolver(
+        solver = await CloudflareSolver.get_instance(
             user_agent=user_agent,
             timeout=timeout,
             headless=headless,
             proxy=proxy,
-        ) as solver:
+        )
+
+        async with solver:
             logging.info(f"Navigating to {url}")
             await solver.driver.get(url)
             
@@ -188,19 +239,19 @@ async def get_cf_clearance(url: str, timeout: float = 30, proxy: Optional[str] =
             current_user_agent = await solver.get_user_agent()
             
             if clearance_cookie:
-                # Create the cookie string from all cookies
                 cookie_string = "; ".join(
                     f'{cookie["name"]}={cookie["value"]}' for cookie in all_cookies
                 )
                 logging.info("Successfully obtained clearance cookie")
-                # Print to stdout for easy parsing by Node.js
-                print(f"Cookie: {cookie_string}")
-                print(f"User agent: {current_user_agent}")
-                return {
+                result = {
                     "success": True,
                     "cookie": cookie_string,
                     "user_agent": current_user_agent
                 }
+                CloudflareSolver.update_cookie_cache(result)
+                print(f"Cookie: {cookie_string}")
+                print(f"User agent: {current_user_agent}")
+                return result
             else:
                 logging.error("Failed to obtain clearance cookie")
                 return {

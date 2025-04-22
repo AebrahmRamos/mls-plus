@@ -35,14 +35,30 @@ const Course = require('./models/course');
 let currentCookie = process.env.COOKIE;
 let currentUserAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:137.0) Gecko/20100101 Firefox/137.0';
 let lastCookieRefresh = new Date();
+let isRefreshingCookie = false; // Lock flag for cookie refresh
+let cookieRefreshPromise = null; // Promise for ongoing refresh
+let cookieRefreshQueue = []; // Queue for requests waiting for cookie refresh
 
 const pythonPath = path.join(__dirname, '.venv', 'bin', 'python3');
 
+// Constants for retry configurations
+const CURL_MAX_RETRIES = 3;
+const CURL_RETRY_DELAY = 2000; // 2 seconds
+const COOKIE_REFRESH_INTERVAL = 10 * 60 * 1000; // 10 minutes
+
 async function getClearanceCookie(url) {
-    return new Promise((resolve, reject) => {
+    // If there's an ongoing refresh, return its promise
+    if (cookieRefreshPromise) {
+        return cookieRefreshPromise;
+    }
+
+    // Set the lock
+    isRefreshingCookie = true;
+
+    // Create a new refresh promise
+    cookieRefreshPromise = new Promise((resolve, reject) => {
         console.log(`Using Python interpreter: ${pythonPath}`);
         
-        // Run the Python script with the provided URL
         const python = spawn(pythonPath, ['main.py', '--headed', url]);
         
         let output = '';
@@ -50,14 +66,13 @@ async function getClearanceCookie(url) {
 
         python.stdout.on('data', (data) => {
             const dataStr = data.toString();
-            console.log(`Python stdout: ${dataStr}`); // Log the raw output for debugging
+            console.log(`Python stdout: ${dataStr}`);
             output += dataStr;
         });
 
         python.stderr.on('data', (data) => {
             const message = data.toString();
             errorOutput += message;
-            // Only log as error if it's not an INFO message
             if (!message.includes('[INFO]')) {
                 console.error(`Python error: ${message}`);
             } else {
@@ -70,12 +85,10 @@ async function getClearanceCookie(url) {
             reject(new Error(`Failed to start Python process: ${error.message}`));
         });
 
-        python.on('close', (code) => {
+        python.on('close', async (code) => {
             try {
                 console.log(`Python process exited with code ${code}`);
-                console.log(`Full output: ${output}`);
                 
-                // Parse the output to get cookie and user agent
                 const cookieMatch = output.match(/Cookie: ([^\n]*)/);
                 const userAgentMatch = output.match(/User agent: ([^\n]*)/);
 
@@ -87,19 +100,57 @@ async function getClearanceCookie(url) {
                     });
                 } else {
                     console.error('Failed to extract cookie or user agent from output');
-                    console.error('Cookie match:', cookieMatch);
-                    console.error('User agent match:', userAgentMatch);
                     reject(new Error('Failed to extract cookie or user agent from output'));
                 }
             } catch (error) {
                 console.error('Exception while processing Python output:', error);
                 reject(error);
+            } finally {
+                // Clear the lock and promise
+                isRefreshingCookie = false;
+                cookieRefreshPromise = null;
+                
+                // Process queued requests
+                while (cookieRefreshQueue.length > 0) {
+                    const { resolve: queuedResolve } = cookieRefreshQueue.shift();
+                    try {
+                        const result = await getClearanceCookie(url);
+                        queuedResolve(result);
+                    } catch (error) {
+                        // If we fail, continue to next queued request
+                        console.error('Failed to process queued cookie refresh:', error);
+                    }
+                }
             }
         });
     });
+
+    return cookieRefreshPromise;
 }
 
 async function performCurlRequest(courseCode, retryCount = 0) {
+    // Check if cookie needs refresh
+    const needsRefresh = !currentCookie || new Date() - lastCookieRefresh > COOKIE_REFRESH_INTERVAL;
+    
+    if (needsRefresh) {
+        if (isRefreshingCookie) {
+            // If already refreshing, queue this request
+            await new Promise((resolve) => {
+                cookieRefreshQueue.push({ resolve });
+            });
+        } else {
+            try {
+                const clearance = await getClearanceCookie('https://enroll.dlsu.edu.ph/dlsu/view_course_offerings');
+                currentCookie = clearance.cookie;
+                currentUserAgent = clearance.userAgent;
+                lastCookieRefresh = new Date();
+            } catch (error) {
+                console.error('Failed to refresh cookie:', error);
+                // Continue with existing cookie if refresh fails
+            }
+        }
+    }
+
     const command = `curl 'https://enroll.dlsu.edu.ph/dlsu/view_course_offerings' --compressed -X POST \
                 -H 'User-Agent: ${currentUserAgent}' \
                 -H 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8' \
@@ -122,42 +173,44 @@ async function performCurlRequest(courseCode, retryCount = 0) {
 
     try {
         const htmlContent = execSync(command, { encoding: 'utf8', timeout: 10000 });
-        // console.log(`Received response for ${courseCode} (length: ${htmlContent})`);
 
-        // Check for various error conditions
         const needsNewCookie = 
             htmlContent.includes('403 Forbidden') ||
             htmlContent.includes('check your browser') ||
             htmlContent.includes('Security check') ||
             htmlContent.includes('Please wait') ||
-            htmlContent.length < 500 || // Suspiciously short response
-            !htmlContent.includes('table'); // Should always have a table in valid response
+            htmlContent.length < 500 ||
+            !htmlContent.includes('table');
 
-        if (needsNewCookie && retryCount < 3) {
-            console.log(`Invalid response detected, attempting to get new cookie (attempt ${retryCount + 1}/3)`);
-            try {
-                const clearance = await getClearanceCookie('https://enroll.dlsu.edu.ph/dlsu/view_course_offerings');
-                currentCookie = clearance.cookie;
-                currentUserAgent = clearance.userAgent;
-                lastCookieRefresh = new Date();
-                
-                // Wait 2 seconds before retrying
-                await new Promise(resolve => setTimeout(resolve, 2000));
-                return performCurlRequest(courseCode, retryCount + 1);
-            } catch (e) {
-                console.error('Failed to get new cookie:', e);
-                // If we can't get a new cookie, return the current HTML content
-                // as it might still be valid
-                return htmlContent;
+        if (needsNewCookie && retryCount < CURL_MAX_RETRIES) {
+            console.log(`Invalid response detected, attempting to get new cookie (attempt ${retryCount + 1}/${CURL_MAX_RETRIES})`);
+            
+            if (isRefreshingCookie) {
+                // Wait for ongoing refresh
+                await new Promise((resolve) => {
+                    cookieRefreshQueue.push({ resolve });
+                });
+            } else {
+                try {
+                    const clearance = await getClearanceCookie('https://enroll.dlsu.edu.ph/dlsu/view_course_offerings');
+                    currentCookie = clearance.cookie;
+                    currentUserAgent = clearance.userAgent;
+                    lastCookieRefresh = new Date();
+                } catch (e) {
+                    console.error('Failed to get new cookie:', e);
+                }
             }
+            
+            // Wait before retrying
+            await new Promise(resolve => setTimeout(resolve, CURL_RETRY_DELAY));
+            return performCurlRequest(courseCode, retryCount + 1);
         }
 
         return htmlContent;
     } catch (error) {
-        if (retryCount < 3) {
-            console.log(`Request failed, retrying (${retryCount + 1}/3)...`);
-            // Wait 2 seconds before retrying
-            await new Promise(resolve => setTimeout(resolve, 2000));
+        if (retryCount < CURL_MAX_RETRIES) {
+            console.log(`Request failed, retrying (${retryCount + 1}/${CURL_MAX_RETRIES})...`);
+            await new Promise(resolve => setTimeout(resolve, CURL_RETRY_DELAY));
             return performCurlRequest(courseCode, retryCount + 1);
         }
         throw error;
