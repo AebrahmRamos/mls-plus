@@ -43,14 +43,14 @@ async function getClearanceCookie(url) {
         console.log(`Using Python interpreter: ${pythonPath}`);
         
         // Run the Python script with the provided URL
-        const python = spawn(pythonPath, ['main.py', '--headed', url]);
+        const python = spawn(pythonPath, ['main.py', url]);
         
         let output = '';
         let errorOutput = '';
 
         python.stdout.on('data', (data) => {
             const dataStr = data.toString();
-            console.log(`Python stdout: ${dataStr}`); // Log the raw output for debugging
+            // console.log(`Python stdout: ${dataStr}`); // Log the raw output for debugging
             output += dataStr;
         });
 
