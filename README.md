@@ -1,6 +1,7 @@
 # MLS Plus - Better DLSU Course Offerings View
 
 # NOTE!!!!: Properly working sa mac, haven't tried sa windows yet pero it should work the same. Just need to tweak a few things at most.
+You can run yung selenium ng naka headless (selenium is pang kuha lang nung cookies d siya yung nag fefetch ng data) if gumagana sainyo pero based on my experience mas na by-bypass cloudflare if headed mode (which is yung default
 
 A Node.js application that provides an API to fetch and search course offerings from DLSU's enrollment system with MongoDB caching support.
 
