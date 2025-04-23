@@ -318,6 +318,7 @@ async def main() -> None:
         "--headed",
         action="store_true",
         help="Run the browser in headed mode",
+        default=False  # Default to headless mode
     )
     
     parser.add_argument(
