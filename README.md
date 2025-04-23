@@ -1,5 +1,7 @@
 # MLS Plus - Better DLSU Course Offerings View
 
+# NOTE!!!!: Properly working sa mac, haven't tried sa windows yet pero it should work the same. Just need to tweak a few things at most.
+
 A Node.js application that provides an API to fetch and search course offerings from DLSU's enrollment system with MongoDB caching support.
 
 ## Features
