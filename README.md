@@ -46,6 +46,51 @@ MONGODB_URI=your_mongodb_connection_string
 PORT=3000 # Optional, defaults to 3000
 ```
 
+## Environment Variables Setup
+
+To configure the application, you need to create a `.env` file in the root directory of the project. This file will store sensitive information such as database connection strings and server configurations. Below is an example of the `.env` file:
+
+```
+COOKIE="cf_clearance=NDXUwc79U8Ot_dnLId8N_ctVrbh59OkCOUgee.UigRE-1745371969-1.2.1.1-HUt.GklHL9wkuHKFGtNmzIx2h3etQVhgJ7_njq5o3ePvgEgwWsYRyLp5Fp_ZHPQTfJkehlWBwqGIDRAuCbWOUDfWdXX8tDeEZDtUuS5380NesntOWfPRpvf18vuIO3EyoezcxF_hKk.JKYQ0De1WWlBtU7b_JgMLEPjvsUdeZXukzNQmNzhXEKDfjZZoOh2Jr1_gRSxQ1msSbNUyM4ksFF1ZvOxuwnoN8I_oDNb9czFoAJFREqbTG828yJvbf1L8G2fbEqyB8mft5pJxQxVdmQSdXnttRBQMLnPXoe3uS.iObDQpuP5LCHeZeEAyn9Q5zysBy3bEOZrKZD7bbjpD6OJT3ohIpo7k8HrBGSZu8n2vRNHpzeKCTwKfAOp5I2b2; NSC_Fospmm_TTM=ffffffffc3a017b045525d5f4f58455e445a4a423660; DLSU1=12275735; DLSU2=201666; DLSU3=; DLSU4=STU; DLSU5=; DLSU6=April     17, 2025 10:44:34 PM; DLSU8=; DLSU9=VIEW_CURRICULUM_AUDIT; DLSU10=; DLSU11=04/21/25 1227; DLSU12=; DLSU13=Y; DLSU14="
+NODE_EN="development"
+PORT=3000
+MONGODB_URI=URI HERE
+```
+
+- Replace `your_mongodb_connection_string` with the connection string for your MongoDB instance.
+- The `PORT` variable is optional and defaults to `3000` if not specified.
+- Keep or replace 'cookie' kayo bahala. From MLS, nakukuha siya from network tab ng developer options/inspect element, file: view_course_offering, headers, request headers, cookie, `copy value`
+
+## MongoDB Setup Guide
+
+1. **Install MongoDB**:
+   - Follow the official MongoDB installation guide for your operating system: [MongoDB Installation Guide](https://www.mongodb.com/docs/manual/installation/).
+
+2. **Start MongoDB**:
+   - On macOS and Linux, you can start MongoDB using:
+     ```bash
+     brew services start mongodb-community
+     ```
+   - On Windows, use the MongoDB Compass or start the MongoDB service from the Services app.
+
+3. **Create a Database**:
+   - Open the MongoDB shell or Compass and create a new database for the project. For example:
+     ```bash
+     use mls_plus
+     ```
+
+4. **Set Up a Collection**:
+   - Inside the `mls_plus` database, create a collection to store course data. For example:
+     ```bash
+     db.createCollection("courses")
+     ```
+
+5. **Verify Connection**:
+   - Ensure that your MongoDB instance is running and accessible using the connection string provided in the `.env` file.
+
+6. **Test the Application**:
+   - Start the server and verify that the application can connect to MongoDB without errors.
+
 ## Usage
 
 1. Start the server:
