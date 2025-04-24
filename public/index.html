@@ -93,7 +93,8 @@
             margin-bottom: 1.5rem;
         }
 
-        .search-form input[type="text"] {
+        .search-form input[type="text"],
+        .search-form input[type="number"] {
             flex: 1;
             min-width: 250px;
             padding: 0.75rem;
@@ -102,7 +103,14 @@
             font-size: 1rem;
             transition: border-color 0.2s, box-shadow 0.2s;
         }
-        .search-form input[type="text"]:focus {
+        
+        .search-form input[type="number"] {
+            min-width: 100px;
+            max-width: 150px;
+        }
+        
+        .search-form input[type="text"]:focus,
+        .search-form input[type="number"]:focus {
             outline: none;
             border-color: var(--primary-color);
             box-shadow: 0 0 0 0.2rem var(--checkbox-focus-ring);
@@ -122,6 +130,83 @@
 
         .search-form button:hover {
             background-color: var(--primary-hover);
+        }
+        
+        /* Auto Refresh Controls */
+        .auto-refresh-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin: 1.5rem 0;
+            padding: 1rem;
+            background-color: var(--gray-lighter);
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            flex-wrap: wrap;
+        }
+        
+        .auto-refresh-controls label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            margin-right: 1rem;
+        }
+        
+        .auto-refresh-controls .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+            margin-right: 10px;
+        }
+        
+        .auto-refresh-controls .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .auto-refresh-controls .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        
+        .auto-refresh-controls .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        .auto-refresh-controls input:checked + .slider {
+            background-color: var(--primary-color);
+        }
+        
+        .auto-refresh-controls input:focus + .slider {
+            box-shadow: 0 0 1px var(--primary-color);
+        }
+        
+        .auto-refresh-controls input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        
+        .auto-refresh-status {
+            font-size: 0.85rem;
+            color: #555;
+            padding-left: 10px;
+            flex-grow: 1;
         }
 
         /* --- Improved Filter Controls Styling --- */
@@ -295,6 +380,16 @@
         }
         /* --- End Filter Controls Styling --- */
 
+        /* Filter group for open/closed sections */
+        .filter-section-status {
+            margin-bottom: 1rem;
+        }
+        
+        .filter-section-status .checkbox-label {
+            display: inline-flex;
+            margin-right: 1rem;
+        }
+
         /* Loading, Error, No Results Messages */
         .loading, .error, .no-results {
             text-align: center;
@@ -443,13 +538,16 @@
 
         /* Open/Closed Section Highlighting */
         .section-table tr.open-section {
-            background-color: var(--open-section-bg);
+            background-color: var(--open-section-bg) !important;
         }
-        .section-table tr.open-section:nth-child(even) { /* Ensure open overrides even style */
-             background-color: var(--open-section-bg);
+        .section-table tr.closed-section {
+            background-color: var(--closed-section-bg) !important;
         }
         .section-table tr.open-section:hover {
-             background-color: #bce3be; /* Slightly darker green on hover */
+             background-color: #bce3be !important; /* Slightly darker green on hover */
+        }
+        .section-table tr.closed-section:hover {
+             background-color: #b6e2f2 !important; /* Slightly darker blue on hover */
         }
 
         /* Professor Row (if used, currently not in JS) */
@@ -516,6 +614,19 @@
             .filter-controls {
                 padding: 1rem;
             }
+            
+            .auto-refresh-controls {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .auto-refresh-controls > * {
+                margin-bottom: 0.5rem;
+            }
+            
+            .auto-refresh-status {
+                padding-left: 0;
+            }
         }
 
     </style>
@@ -534,8 +645,35 @@
                 <input type="text" id="courseCode" placeholder="Enter course codes (e.g., CSALGCM, GERIZAL)" maxlength="200">
                 <button id="searchButton">Search</button>
             </div>
+            
+            <div class="auto-refresh-controls">
+                <label class="toggle-switch">
+                    <input type="checkbox" id="autoRefreshToggle">
+                    <span class="slider"></span>
+                </label>
+                <span>Auto Refresh:</span>
+                <input type="number" id="refreshInterval" min="5" max="3600" value="30" title="Refresh interval in seconds (min: 5s)">
+                <span>seconds</span>
+                <span id="refreshStatus" class="auto-refresh-status">Auto-refresh is disabled</span>
+            </div>
 
             <div class="filter-controls" id="filterControls" style="display: none;">
+                <div class="filter-group">
+                    <label>Section Status:</label>
+                    <div id="filterSectionStatusContainer" class="filter-section-status">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="filterSectionStatus" value="open" checked>
+                            <span class="custom-checkbox"></span>
+                            Open
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="filterSectionStatus" value="closed" checked>
+                            <span class="custom-checkbox"></span>
+                            Closed
+                        </label>
+                    </div>
+                </div>
+                
                 <div class="filter-group">
                     <label>Time:</label>
                     <div id="filterTimeContainer" class="checkbox-group">
@@ -616,12 +754,22 @@
             const filterProfessorContainer = document.getElementById('filterProfessorContainer');
             const filterBuildingContainer = document.getElementById('filterBuildingContainer');
             const filterRemarksContainer = document.getElementById('filterRemarksContainer');
+            const filterSectionStatusContainer = document.getElementById('filterSectionStatusContainer');
             const applyFiltersButton = document.getElementById('applyFiltersButton');
             const clearFiltersButton = document.getElementById('clearFiltersButton');
+            const autoRefreshToggle = document.getElementById('autoRefreshToggle');
+            const refreshInterval = document.getElementById('refreshInterval');
+            const refreshStatus = document.getElementById('refreshStatus');
 
             // --- State Variables ---
             const proxyUrl = '/api/search'; // Replace with your actual API endpoint if needed
             let allFetchedData = []; // Stores the raw data from all successful searches
+            let autoRefreshTimer = null; // To store the timer for auto-refresh
+            let lastSearchCourseCodes = []; // Store the last search queries for auto-refresh
+            let currentFilters = {}; // Store current applied filters
+            
+            // Load saved filter preferences from localStorage
+            const savedFilters = loadSavedFilters();
 
             // --- Event Listeners ---
             searchButton.addEventListener('click', searchCourses);
@@ -632,8 +780,196 @@
                     searchCourses(); // Trigger search on Enter key
                 }
             });
+            
+            // Auto-refresh toggle event listener
+            autoRefreshToggle.addEventListener('change', function() {
+                if (this.checked) {
+                    startAutoRefresh();
+                } else {
+                    stopAutoRefresh();
+                }
+            });
+            
+            // Interval input change listener
+            refreshInterval.addEventListener('change', function() {
+                // Enforce minimum value
+                if (this.value < 5) {
+                    this.value = 5;
+                }
+                
+                // If auto-refresh is on, restart with new interval
+                if (autoRefreshToggle.checked) {
+                    stopAutoRefresh();
+                    startAutoRefresh();
+                }
+            });
 
+            /**
+             * Loads saved filter preferences from localStorage
+             * Only loads time, day, and section status filters as specified
+             */
+            function loadSavedFilters() {
+                try {
+                    const savedFiltersStr = localStorage.getItem('dlsuCourseSearchFilters');
+                    if (savedFiltersStr) {
+                        return JSON.parse(savedFiltersStr);
+                    }
+                } catch (e) {
+                    console.error('Error loading saved filters:', e);
+                }
+                return {
+                    times: [],
+                    days: [],
+                    sectionStatus: ['open', 'closed'] // Default to both selected
+                };
+            }
+            
+            /**
+             * Saves current filter selections to localStorage
+             * Only saves time, day, and section status filters as specified
+             */
+            function saveFilterPreferences() {
+                const filtersToSave = {
+                    times: getSelectedCheckboxValues('filterTimeContainer'),
+                    days: getSelectedCheckboxValues('filterDayContainer'),
+                    sectionStatus: getSelectedCheckboxValues('filterSectionStatusContainer')
+                };
+                
+                try {
+                    localStorage.setItem('dlsuCourseSearchFilters', JSON.stringify(filtersToSave));
+                } catch (e) {
+                    console.error('Error saving filter preferences:', e);
+                }
+            }
+            
             // --- Core Functions ---
+            
+            /**
+             * Starts the auto-refresh timer
+             */
+            function startAutoRefresh() {
+                if (lastSearchCourseCodes.length === 0) {
+                    // No search has been performed yet
+                    refreshStatus.textContent = "Auto-refresh ready (perform a search first)";
+                    return;
+                }
+                
+                // Clear any existing timer
+                stopAutoRefresh();
+                
+                // Get interval in milliseconds (minimum 5 seconds)
+                const intervalMs = Math.max(5, parseInt(refreshInterval.value, 10)) * 1000;
+                
+                // Set up new timer
+                autoRefreshTimer = setInterval(() => {
+                    refreshStatus.textContent = `Auto-refreshing... (every ${refreshInterval.value}s)`;
+                    performAutoRefresh();
+                }, intervalMs);
+                
+                refreshStatus.textContent = `Auto-refresh active (every ${refreshInterval.value}s)`;
+            }
+            
+            /**
+             * Stops the auto-refresh timer
+             */
+            function stopAutoRefresh() {
+                if (autoRefreshTimer) {
+                    clearInterval(autoRefreshTimer);
+                    autoRefreshTimer = null;
+                }
+                refreshStatus.textContent = "Auto-refresh is disabled";
+            }
+            
+            /**
+             * Performs an auto-refresh using the last search parameters
+             */
+            function performAutoRefresh() {
+                if (lastSearchCourseCodes.length === 0) return;
+                
+                // Create fetch promises for each course code
+                const promises = lastSearchCourseCodes.map(fetchCourseOfferings);
+                
+                // Process results once all fetches are complete - silently
+                Promise.all(promises)
+                    .then(results => {
+                        let hasValidData = false;
+                        
+                        allFetchedData = []; // Clear previous successful data
+                        
+                        results.forEach(data => {
+                            if (!data.error && data.sections && data.sections.length > 0) {
+                                // Store valid data
+                                allFetchedData.push(data);
+                                hasValidData = true;
+                            }
+                        });
+                        
+                        if (hasValidData) {
+                            // Re-apply any active filters
+                            applyStoredFilters();
+                            
+                            // Add timestamp to status
+                            const now = new Date();
+                            const timeStr = now.toLocaleTimeString();
+                            refreshStatus.textContent = `Last auto-refresh: ${timeStr} (every ${refreshInterval.value}s)`;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Auto-refresh error:', error);
+                        refreshStatus.textContent = `Auto-refresh error: ${error.message} (retrying in ${refreshInterval.value}s)`;
+                    });
+            }
+            
+            /**
+             * Re-applies the stored filters to the refreshed data
+             */
+            function applyStoredFilters() {
+                // Get current filters if any are active
+                const selectedFilters = {
+                    times: getSelectedCheckboxValues('filterTimeContainer'),
+                    days: getSelectedCheckboxValues('filterDayContainer'),
+                    professors: getSelectedCheckboxValues('filterProfessorContainer'),
+                    buildings: getSelectedCheckboxValues('filterBuildingContainer'),
+                    remarks: getSelectedCheckboxValues('filterRemarksContainer'),
+                    sectionStatus: getSelectedCheckboxValues('filterSectionStatusContainer')
+                };
+                
+                // Store current filters
+                currentFilters = selectedFilters;
+                
+                // Filter data based on selections if any are active
+                let filteredData = allFetchedData;
+                
+                const hasActiveFilters = Object.values(selectedFilters).some(arr => arr.length > 0);
+                
+                if (hasActiveFilters) {
+                    filteredData = allFetchedData.map(course => {
+                        if (!course || !course.sections) return null;
+                        
+                        const filteredSections = course.sections.filter(section => {
+                            // Check if the section is open/closed based on selection
+                            const isOpen = determineIfSectionIsOpen(section);
+                            const statusMatch = selectedFilters.sectionStatus.length === 0 || 
+                                               (isOpen && selectedFilters.sectionStatus.includes('open')) || 
+                                               (!isOpen && selectedFilters.sectionStatus.includes('closed'));
+                                               
+                            // Check if the section matches the selected criteria for each filter type
+                            const timeMatch = selectedFilters.times.length === 0 || section.times?.some(t => selectedFilters.times.includes(t));
+                            const dayMatch = selectedFilters.days.length === 0 || section.days?.some(d => selectedFilters.days.includes(d));
+                            const profMatch = selectedFilters.professors.length === 0 || selectedFilters.professors.includes(section.professor);
+                            const buildingMatch = selectedFilters.buildings.length === 0 || section.rooms?.some(r => selectedFilters.buildings.includes(extractBuilding(r)));
+                            const remarksMatch = selectedFilters.remarks.length === 0 || selectedFilters.remarks.includes(section.remarks);
+                            
+                            // Section must match all active filters
+                            return statusMatch && timeMatch && dayMatch && profMatch && buildingMatch && remarksMatch;
+                        });
+                        
+                        return filteredSections.length > 0 ? { ...course, sections: filteredSections } : null;
+                    }).filter(course => course !== null);
+                }
+                
+                renderResults(filteredData);
+            }
 
             /**
              * Initiates the course search process based on user input.
@@ -645,6 +981,14 @@
                 if (courseCodes.length === 0) {
                     showError('Please enter at least one course code.');
                     return;
+                }
+                
+                // Store search for auto-refresh
+                lastSearchCourseCodes = [...courseCodes];
+                
+                // If auto-refresh is enabled, restart with new search terms
+                if (autoRefreshToggle.checked) {
+                    stopAutoRefresh();
                 }
 
                 // Reset UI state for new search
@@ -662,6 +1006,12 @@
                         hideLoading();
                         showError(`An unexpected error occurred during search: ${error.message}`);
                         console.error('Search processing error:', error);
+                    })
+                    .finally(() => {
+                        // If auto-refresh was enabled, restart it
+                        if (autoRefreshToggle.checked) {
+                            startAutoRefresh();
+                        }
                     });
             }
 
@@ -778,25 +1128,39 @@
                     });
                 });
 
-                // Generate checkboxes for each category
-                generateCheckboxes(filterTimeContainer, [...filters.times].sort());
-                generateCheckboxes(filterDayContainer, [...filters.days].sort());
-                generateCheckboxes(filterProfessorContainer, [...filters.professors].sort());
-                generateCheckboxes(filterBuildingContainer, [...filters.buildings].sort());
-                generateCheckboxes(filterRemarksContainer, [...filters.remarks].sort());
+                // Generate checkboxes for each category and check all by default
+                generateCheckboxes(filterTimeContainer, [...filters.times].sort(), savedFilters.times);
+                generateCheckboxes(filterDayContainer, [...filters.days].sort(), savedFilters.days);
+                generateCheckboxes(filterProfessorContainer, [...filters.professors].sort(), [], true);
+                generateCheckboxes(filterBuildingContainer, [...filters.buildings].sort(), [], true);
+                generateCheckboxes(filterRemarksContainer, [...filters.remarks].sort(), [], true);
+                
+                // Section status checkboxes are handled in HTML, just need to update checked state from saved filters
+                const openStatusCheckbox = filterSectionStatusContainer.querySelector('input[value="open"]');
+                const closedStatusCheckbox = filterSectionStatusContainer.querySelector('input[value="closed"]');
+                
+                if (openStatusCheckbox && closedStatusCheckbox) {
+                    openStatusCheckbox.checked = savedFilters.sectionStatus.includes('open');
+                    closedStatusCheckbox.checked = savedFilters.sectionStatus.includes('closed');
+                }
             }
 
             /**
              * Generates checkbox elements for a given filter category.
              * @param {HTMLElement} container - The container element for the checkboxes.
              * @param {Array<string>} options - An array of unique string options.
+             * @param {Array<string>} savedValues - Previously saved values to check by default
+             * @param {boolean} checkAll - Whether to check all boxes by default (true if no savedValues)
              */
-            function generateCheckboxes(container, options) {
+            function generateCheckboxes(container, options, savedValues = [], checkAll = true) {
                 container.innerHTML = ''; // Clear previous content (like "Loading filters...")
                 if (options.length === 0) {
                     container.innerHTML = '<span class="no-options">N/A</span>'; // Indicate if no options
                     return;
                 }
+                
+                const hasSavedValues = Array.isArray(savedValues) && savedValues.length > 0;
+                
                 options.forEach(option => {
                     const label = document.createElement('label');
                     label.classList.add('checkbox-label'); // Class for styling
@@ -804,14 +1168,19 @@
                     const checkbox = document.createElement('input');
                     checkbox.type = 'checkbox';
                     checkbox.value = option;
-                    // Generate a unique ID based on container and option for the 'for' attribute if needed
-                    // checkbox.id = `${container.id}-${option.replace(/\s+/g, '-')}`;
+                    
+                    // Check the box if:
+                    // 1. We have saved values and this option is in the saved values
+                    // 2. OR if we don't have saved values and checkAll is true
+                    checkbox.checked = hasSavedValues ? 
+                        savedValues.includes(option) : 
+                        checkAll;
+                        
                     checkbox.name = container.id.replace('Container', ''); // e.g., 'filterTime'
 
                     const customCheckbox = document.createElement('span');
                     customCheckbox.classList.add('custom-checkbox'); // Class for the styled checkbox
 
-                    // label.htmlFor = checkbox.id; // Associate label with checkbox
                     label.appendChild(checkbox);
                     label.appendChild(customCheckbox); // Add the custom span
                     label.appendChild(document.createTextNode(` ${option}`)); // Add space and text
@@ -830,14 +1199,24 @@
                     days: getSelectedCheckboxValues('filterDayContainer'),
                     professors: getSelectedCheckboxValues('filterProfessorContainer'),
                     buildings: getSelectedCheckboxValues('filterBuildingContainer'),
-                    remarks: getSelectedCheckboxValues('filterRemarksContainer')
+                    remarks: getSelectedCheckboxValues('filterRemarksContainer'),
+                    sectionStatus: getSelectedCheckboxValues('filterSectionStatusContainer')
                 };
+
+                // Save time, day, and section status filter preferences
+                saveFilterPreferences();
 
                 // Filter the `allFetchedData` based on selections
                 const filteredData = allFetchedData.map(course => {
                     if (!course || !course.sections) return null; // Skip if course data is invalid
 
                     const filteredSections = course.sections.filter(section => {
+                        // Check if the section is open/closed based on selection
+                        const isOpen = determineIfSectionIsOpen(section);
+                        const statusMatch = selectedFilters.sectionStatus.length === 0 || 
+                                           (isOpen && selectedFilters.sectionStatus.includes('open')) || 
+                                           (!isOpen && selectedFilters.sectionStatus.includes('closed'));
+                                           
                         // Check if the section matches the selected criteria for each filter type
                         const timeMatch = selectedFilters.times.length === 0 || section.times?.some(t => selectedFilters.times.includes(t));
                         const dayMatch = selectedFilters.days.length === 0 || section.days?.some(d => selectedFilters.days.includes(d));
@@ -846,7 +1225,7 @@
                         const remarksMatch = selectedFilters.remarks.length === 0 || selectedFilters.remarks.includes(section.remarks);
 
                         // Section must match all active filters
-                        return timeMatch && dayMatch && profMatch && buildingMatch && remarksMatch;
+                        return statusMatch && timeMatch && dayMatch && profMatch && buildingMatch && remarksMatch;
                     });
 
                     // Return the course with only the filtered sections, or null if no sections match
@@ -855,6 +1234,35 @@
                 }).filter(course => course !== null); // Remove courses that became null (no matching sections)
 
                 renderResults(filteredData); // Render the filtered data
+                
+                // Store current filters for auto-refresh
+                currentFilters = selectedFilters;
+            }
+            
+            /**
+             * Determines if a section should be considered "open" based on enrollment and capacity
+             * @param {object} section - The section object to check
+             * @returns {boolean} - True if the section is open, false if closed
+             */
+            function determineIfSectionIsOpen(section) {
+                // If isOpen is already explicitly set, use that
+                if (typeof section.isOpen === 'boolean') {
+                    // If enrolled equals capacity, override to closed
+                    if (section.enrolled !== undefined && 
+                        section.enrlCap !== undefined && 
+                        section.enrolled === section.enrlCap) {
+                        return false;
+                    }
+                    return section.isOpen;
+                }
+                
+                // Otherwise determine based on enrollment vs. capacity
+                if (section.enrolled !== undefined && section.enrlCap !== undefined) {
+                    return section.enrolled < section.enrlCap;
+                }
+                
+                // Default to closed if we can't determine
+                return false;
             }
 
             /**
@@ -864,6 +1272,9 @@
                 resetFilters(); // Uncheck all checkboxes
                 hideNoResults(); // Hide the "no results" message
                 renderResults(allFetchedData); // Re-render with original full data
+                
+                // Save the cleared state
+                saveFilterPreferences();
             }
 
             /**
@@ -969,7 +1380,9 @@
                 // Table Body
                 const tbody = document.createElement('tbody');
                 data.sections.forEach(section => {
-                    const rowClass = section.isOpen ? 'open-section' : '';
+                    // Determine if the section is open using our helper function
+                    const isOpen = determineIfSectionIsOpen(section);
+                    const rowClass = isOpen ? 'open-section' : 'closed-section';
                     const numRows = Math.max(section.days?.length || 1, section.times?.length || 1, section.rooms?.length || 1);
 
                     for (let i = 0; i < numRows; i++) {
@@ -1114,6 +1527,14 @@
             function getSelectedCheckboxValues(containerId) {
                 const container = document.getElementById(containerId);
                 if (!container) return [];
+                
+                // Special case for section status which uses name attribute
+                if (containerId === 'filterSectionStatusContainer') {
+                    const checkedBoxes = container.querySelectorAll('input[name="filterSectionStatus"]:checked');
+                    return Array.from(checkedBoxes).map(cb => cb.value);
+                }
+                
+                // Standard case for regular filter groups
                 const checkedBoxes = container.querySelectorAll('input[type="checkbox"]:checked');
                 return Array.from(checkedBoxes).map(cb => cb.value);
             }
